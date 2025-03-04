@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import navigation hook
 import "./Signup.css"; // Import the CSS file
 
 const Signup = () => {
@@ -9,6 +10,7 @@ const Signup = () => {
   });
 
   const [errorMessage, setErrorMessage] = useState(""); // State for error messages
+  const navigate = useNavigate(); // Hook for navigation
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -33,6 +35,7 @@ const Signup = () => {
       }
 
       alert("✅ " + data.message);
+      navigate("/login"); // Redirect to login after signup success
     } catch (error) {
       console.error("❌ Signup Error:", error);
       setErrorMessage(error.message); // Display error in UI
@@ -54,6 +57,9 @@ const Signup = () => {
 
           <button type="submit" className="signup-button">Sign Up</button>
         </form>
+
+        <button className="secondary-button" onClick={() => navigate("/")}>🏠 Back to Home</button>
+        <button className="secondary-button" onClick={() => navigate("/login")}>🔑 Go to Login</button>
       </div>
     </div>
   );
