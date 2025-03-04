@@ -1,0 +1,90 @@
+/* General container styling */
+.signup-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f4f4f4;
+  }
+  
+  /* Enlarged signup card */
+  .signup-card {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 450px; /* Increased width */
+    text-align: center;
+  }
+  
+  /* Enlarged title */
+  h2 {
+    font-size: 2rem; /* Bigger title */
+    margin-bottom: 5px;
+    color: #333;
+  }
+  
+  /* Enlarged input fields */
+  input {
+    width: 100%;
+    padding: 14px; /* Bigger inputs */
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1.2rem; /* Larger font */
+  }
+  
+  input:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+  
+  /* Enlarged Sign Up button */
+  .signup-button {
+    width: 100%;
+    background: #007bff;
+    color: white;
+    padding: 14px;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: 15px;
+  }
+  
+  .signup-button:hover {
+    background: #0056b3;
+  }
+  
+  /* Secondary buttons for Home & Login */
+  .secondary-button {
+    width: 100%;
+    background: #ddd;
+    color: #333;
+    padding: 14px;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: 8px;
+  }
+  
+  .secondary-button:hover {
+    background: #bbb;
+  }
+  
+  /* Enlarged and bold error message */
+  .error-message {
+    background: #ffebee;
+    color: #d32f2f;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    font-size: 1.2rem; /* Larger text */
+    font-weight: bold; /* Bold text */
+    text-align: center;
+  }
+  
