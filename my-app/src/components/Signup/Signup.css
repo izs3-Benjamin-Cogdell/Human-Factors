@@ -1,0 +1,117 @@
+/* General container styling */
+.signup-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f4f4f4;
+  }
+  
+  /* Signup card */
+  .signup-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 350px;
+    text-align: center;
+  }
+  
+  /* Logo */
+  .signup-logo img {
+    width: 50px;
+    margin-bottom: 10px;
+  }
+  
+  /* Title and subtext */
+  h2 {
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+    color: #333;
+  }
+  
+  .signup-subtext {
+    font-size: 0.9rem;
+    color: #777;
+    margin-bottom: 20px;
+  }
+  
+  /* Input fields */
+  input {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+  
+  input:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+  
+  /* Forgot password */
+  .forgot-password {
+    text-align: right;
+    font-size: 0.8rem;
+    color: #007bff;
+    cursor: pointer;
+    margin-bottom: 15px;
+  }
+  
+  /* Signup button */
+  .signup-button {
+    width: 100%;
+    background: #007bff;
+    color: white;
+    padding: 10px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .signup-button:hover {
+    background: #0056b3;
+  }
+  
+  /* Login link */
+  .login-link {
+    font-size: 0.9rem;
+    margin-top: 10px;
+    color: #777;
+  }
+  
+  .login-link span {
+    color: #007bff;
+    cursor: pointer;
+  }
+  
+  /* Social icons */
+  .social-icons {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+  }
+  
+  .icon {
+    width: 35px;
+    height: 35px;
+    background: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 5px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .icon:hover {
+    background: #ccc;
+  }
+  
