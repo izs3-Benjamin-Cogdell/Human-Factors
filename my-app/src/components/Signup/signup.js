@@ -8,12 +8,17 @@ const Signup = () => {
     password: "",
   });
 
+  const [errorMessage, setErrorMessage] = useState(""); // State for error messages
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrorMessage(""); // Clear error when user types
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage(""); // Reset error before request
+
     try {
       const response = await fetch("http://localhost:5000/api/signup", {
         method: "POST",
@@ -21,37 +26,34 @@ const Signup = () => {
         body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        throw new Error(data.message || "An unexpected error occurred.");
       }
 
-      const data = await response.json();
-      alert(data.message);
+      alert("✅ " + data.message);
     } catch (error) {
       console.error("❌ Signup Error:", error);
-      alert("Signup failed. Check the console for details.");
+      setErrorMessage(error.message); // Display error in UI
     }
   };
 
   return (
     <div className="signup-container">
       <div className="signup-card">
-
         <h2>Sign Up Now</h2>
         <p className="signup-subtext">Please fill in the details to create an account</p>
-        
+
+        {errorMessage && <p className="error-message">{errorMessage}</p>} {/* Display errors */}
+
         <form onSubmit={handleSubmit}>
           <input type="text" name="name" placeholder="Name" onChange={handleChange} required />
           <input type="email" name="email" placeholder="Email" onChange={handleChange} required />
           <input type="password" name="password" placeholder="Password" onChange={handleChange} required />
 
-          <div className="forgot-password">Forgot Password?</div>
-
           <button type="submit" className="signup-button">Sign Up</button>
         </form>
-
-        <p className="login-link">Already have an account? <span>Log in</span></p>
-
       </div>
     </div>
   );

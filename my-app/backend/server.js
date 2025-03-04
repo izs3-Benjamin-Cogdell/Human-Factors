@@ -30,33 +30,32 @@ app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
-// ✅ Signup Route (Saves Users to MongoDB)
 app.post("/api/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    // Validate required fields
     if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({ message: "Please fill in all fields." });
     }
 
-    // Check if the user already exists
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "An account with this email already exists. Try logging in." });
     }
 
-    // Create and save a new user
+    // Save the new user
     const newUser = new User({ name, email, password });
     await newUser.save();
 
-    console.log("✅ User saved:", newUser); // Debugging log
-
-    res.status(201).json({ message: "User registered successfully!" });
+    res.status(201).json({ message: "Account created successfully! 🎉" });
   } catch (error) {
     console.error("❌ Signup Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Something went wrong. Please try again later." });
   }
 });
+
 
 // ✅ Start Server
 app.listen(PORT, () => {
