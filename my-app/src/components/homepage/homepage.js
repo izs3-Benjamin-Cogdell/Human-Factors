@@ -22,7 +22,10 @@ const HomePage = () => {
       <section className="hero">
         <h2>Smarter Tipping, Made Easy</h2>
         <p>Calculate tips effortlessly and make smarter financial decisions.</p>
-        <button className="cta-button">Get Started</button>
+        <Link to="/get-started">
+  <button className="cta-button">Get Started</button>
+</Link>
+
       </section>
       
       {/* Features Section */}
@@ -44,11 +47,11 @@ const HomePage = () => {
         </div>
       </section>
       
-      {/* Call to Action */}
+      {/* Call to Action
       <section className="cta">
         <h3>Start Tipping Smarter Today!</h3>
         <button className="cta-button">Download Now</button>
-      </section>
+      </section> */}
       
       {/* Footer */}
       <footer className="footer">
