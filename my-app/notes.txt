@@ -1,7 +1,9 @@
-coffe tip: 10-15%
-labor: 10% min 5$, max 100$
+coffe tip: -10%
+labor tip: -10%, min 5$, max 100$
 location: +5% urban, +10% tourist
 time of day: -2% morning
 fanciness: casual: -5%, fancy:+5%
 satisfaction level: terrible: max: 1$, bad: -18%, okay: -10%, good: 20%, great: +5%
 time spent: +2% every 10 min > 60 min
+
+base tip: 20%

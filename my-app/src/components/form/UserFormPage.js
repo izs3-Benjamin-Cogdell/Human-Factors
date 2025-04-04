@@ -43,9 +43,66 @@ const UserFormPage = () => {
   const [suggestedTip, setSuggestedTip] = useState(null);
   const [timeSpent, setTimeSpent] = useState("");
 
+  const calculateTip = () => {
+    let tipPercent = 20;
+  
+    // Genre modifiers
+    if (selectedGenre === 3) tipPercent -= 10; // Coffee
+    if (selectedGenre === 4) { // Labor
+      tipPercent -= 10;
+    }
+  
+    // Location modifiers
+    if (location === "Urban") tipPercent += 5;
+    if (location === "Tourist Area") tipPercent += 10;
+  
+    // Time of day modifier
+    if (timeOfDay === "morning") tipPercent -= 2;
+  
+    // Fanciness modifiers
+    if (fanciness === "Casual") tipPercent -= 5;
+    if (fanciness === "Fancy") tipPercent += 5;
+  
+    // Satisfaction level (selectedMood)
+    switch (selectedMood) {
+      case 1: // Terrible
+        return Math.min(1, billAmount); // max $1 tip
+      case 2: // Bad
+        tipPercent -= 18;
+        break;
+      case 3: // Okay
+        tipPercent -= 10;
+        break;
+      case 4: // Good
+        tipPercent = 20;
+        break;
+      case 5: // Great
+        tipPercent += 5;
+        break;
+      default:
+        break;
+    }
+  
+    // Time spent modifier
+    const extraTime = Math.max(0, timeSpent - 60);
+    const timeBonus = Math.floor(extraTime / 10) * 2;
+    tipPercent += timeBonus;
+  
+    // Final tip calculation
+    const tip = (parseFloat(billAmount) * (tipPercent / 100));
+  
+    // If it's a labor job, apply min $5 and max $100
+    if (selectedGenre === 4) {
+      return Math.min(Math.max(tip, 5), 100).toFixed(2);
+    }
+  
+    return tip.toFixed(2);
+  };
+  
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+  
     const formData = {
       billAmount,
       location,
@@ -58,10 +115,10 @@ const UserFormPage = () => {
   
     console.log("Form Submitted:", formData);
   
-    // 👉 Temporary dummy logic: 20% tip
-    const calculatedTip = billAmount ? (parseFloat(billAmount) * 0.2).toFixed(2) : "0.00";
+    const calculatedTip = calculateTip();
     setSuggestedTip(calculatedTip);
   };
+  
   
 
   return (
