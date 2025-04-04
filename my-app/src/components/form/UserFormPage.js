@@ -40,10 +40,12 @@ const UserFormPage = () => {
   const [fanciness, setFanciness] = useState("");
   const [selectedMood, setSelectedMood] = useState(null);
   const [selectedGenre, setSelectedGenre] = useState(null);
+  const [suggestedTip, setSuggestedTip] = useState(null);
   const [timeSpent, setTimeSpent] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
     const formData = {
       billAmount,
       location,
@@ -53,9 +55,14 @@ const UserFormPage = () => {
       genre: selectedGenre,
       timeSpent,
     };
+  
     console.log("Form Submitted:", formData);
-    // You can send this data to your backend or handle it however you like
+  
+    // 👉 Temporary dummy logic: 20% tip
+    const calculatedTip = billAmount ? (parseFloat(billAmount) * 0.2).toFixed(2) : "0.00";
+    setSuggestedTip(calculatedTip);
   };
+  
 
   return (
     <div className="user-form-page">
@@ -185,9 +192,15 @@ const UserFormPage = () => {
 
         {/* Submit */}
         <div style={{ marginTop: "20px" }}>
-          <button type="submit">Submit</button>
+          <button type="submit">Calculate Tip!</button>
         </div>
       </form>
+      {suggestedTip && (
+  <div className="tip-result">
+    <h3>Suggested Tip Amount: ${suggestedTip}</h3>
+  </div>
+)}
+
     </div>
   );
 };
