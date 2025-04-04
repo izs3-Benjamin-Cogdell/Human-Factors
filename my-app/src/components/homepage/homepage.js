@@ -23,7 +23,7 @@ const HomePage = () => {
         <h2>Smarter Tipping, Made Easy</h2>
         <p>Calculate tips effortlessly and make smarter financial decisions.</p>
         <Link to="/get-started">
-  <button className="cta-button">Get Started</button>
+  <button className="cta-button">Calculate Tip </button>
 </Link>
 
       </section>
