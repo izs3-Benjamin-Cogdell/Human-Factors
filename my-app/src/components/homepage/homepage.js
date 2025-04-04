@@ -1,34 +1,32 @@
 import React, { useState, useEffect } from "react";
 import "./homepage.css";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const HomePage = () => {
-  const [userName, setUserName] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in when component mounts
-    const storedUserName = localStorage.getItem('userName');
-    const loggedInStatus = localStorage.getItem('isLoggedIn') === 'true';
+    // Check localStorage for user info when component mounts
+    const storedName = localStorage.getItem('userName');
+    const storedToken = localStorage.getItem('token');
     
-    console.log('localStorage values:', {
-      userName: storedUserName,
-      isLoggedIn: loggedInStatus
-    });
-    
-    setUserName(storedUserName || '');
-    setIsLoggedIn(loggedInStatus);
+    if (storedName && storedToken) {
+      setUserName(storedName);
+    }
   }, []);
 
   const handleLogout = () => {
     // Clear user data from localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('userName');
-    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userId');
     
     // Update state
-    setIsLoggedIn(false);
-    setUserName('');
+    setUserName(null);
+    
+    // Optional: redirect to homepage (already there, but refreshes state)
+    window.location.reload();
   };
 
   return (
@@ -41,7 +39,7 @@ const HomePage = () => {
             <li><a href="#features">Features</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#contact">Contact</a></li>
-            {isLoggedIn ? (
+            {userName ? (
               <li className="user-section">
                 <span className="user-greeting">Welcome, {userName}!</span>
                 <button className="logout-button" onClick={handleLogout}>Logout</button>
