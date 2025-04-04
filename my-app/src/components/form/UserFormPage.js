@@ -59,7 +59,7 @@ const UserFormPage = () => {
 
   return (
     <div className="user-form-page">
-      <h2>TipSmart — Feedback Form</h2>
+      <h2>Suggested Tip Calculator</h2>
       <form onSubmit={handleSubmit}>
         {/* Bill Amount */}
         <div>
