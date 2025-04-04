@@ -30,6 +30,34 @@ app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
+// ✅ Signup Route
+app.post("/api/signup", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Please fill in all fields." });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "An account with this email already exists. Try logging in." });
+    }
+
+    // Save the new user
+    const newUser = new User({ name, email, password });
+    await newUser.save();
+
+    res.status(201).json({ message: "Account created successfully! 🎉" });
+  } catch (error) {
+    console.error("❌ Signup Error:", error);
+    res.status(500).json({ message: "Something went wrong. Please try again later." });
+  }
+});
+
+// ✅ Login Route
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -67,6 +95,10 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+// ✅ Test Route for Debugging
+app.get("/api/test", (req, res) => {
+  res.json({ message: "API is working correctly!" });
+});
 
 // ✅ Start Server
 app.listen(PORT, () => {

@@ -1,8 +1,36 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./homepage.css";
 import { Link } from "react-router-dom";
 
 const HomePage = () => {
+  const [userName, setUserName] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in when component mounts
+    const storedUserName = localStorage.getItem('userName');
+    const loggedInStatus = localStorage.getItem('isLoggedIn') === 'true';
+    
+    console.log('localStorage values:', {
+      userName: storedUserName,
+      isLoggedIn: loggedInStatus
+    });
+    
+    setUserName(storedUserName || '');
+    setIsLoggedIn(loggedInStatus);
+  }, []);
+
+  const handleLogout = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('isLoggedIn');
+    
+    // Update state
+    setIsLoggedIn(false);
+    setUserName('');
+  };
+
   return (
     <div className="homepage">
       {/* Header */}
@@ -13,7 +41,14 @@ const HomePage = () => {
             <li><a href="#features">Features</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><Link to="/login">Login</Link></li>
+            {isLoggedIn ? (
+              <li className="user-section">
+                <span className="user-greeting">Welcome, {userName}!</span>
+                <button className="logout-button" onClick={handleLogout}>Logout</button>
+              </li>
+            ) : (
+              <li><Link to="/login">Login</Link></li>
+            )}
           </ul>
         </nav>
       </header>
