@@ -155,7 +155,7 @@ const UserFormPage = () => {
 
         {/* Genre Selector */}
 <div>
-  <label>What type of service or business was it?</label>
+  <label>What type of restaurant or business was it?</label>
   <div className="mood-selector">
     {genre.map((item) => (
       <button
