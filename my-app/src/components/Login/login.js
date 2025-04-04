@@ -7,10 +7,36 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     console.log("Logging in with", email, password);
-    // Add authentication logic here
+    
+    try {
+      // Replace with your actual backend URL and endpoint
+      const response = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+      
+      const data = await response.json();
+      
+      // Store authentication data - adjust based on what your backend returns
+      localStorage.setItem('token', data.token);
+      
+      // Redirect to homepage
+      navigate('/');
+    } catch (error) {
+      console.error('Login error:', error);
+      alert(error.message || 'Login failed. Please check your credentials.');
+    }
   };
 
   return (

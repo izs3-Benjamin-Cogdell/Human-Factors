@@ -30,28 +30,39 @@ app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
-app.post("/api/signup", async (req, res) => {
+app.post("/api/login", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { email, password } = req.body;
 
     // Validate required fields
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Please fill in all fields." });
+    if (!email || !password) {
+      return res.status(400).json({ message: "Please provide email and password." });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "An account with this email already exists. Try logging in." });
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password." });
     }
 
-    // Save the new user
-    const newUser = new User({ name, email, password });
-    await newUser.save();
+    // Check if password matches
+    // Note: In a real app, you should hash passwords and use bcrypt.compare
+    if (user.password !== password) {
+      return res.status(401).json({ message: "Invalid email or password." });
+    }
 
-    res.status(201).json({ message: "Account created successfully! 🎉" });
+    // Generate token (in a real app, use JWT)
+    // For simplicity, we're just sending a basic token here
+    const token = user._id.toString();
+
+    res.status(200).json({ 
+      token,
+      userId: user._id,
+      name: user.name,
+      message: "Login successful!" 
+    });
   } catch (error) {
-    console.error("❌ Signup Error:", error);
+    console.error("❌ Login Error:", error);
     res.status(500).json({ message: "Something went wrong. Please try again later." });
   }
 });
