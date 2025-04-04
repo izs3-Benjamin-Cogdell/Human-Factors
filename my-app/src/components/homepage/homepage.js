@@ -1,8 +1,34 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./homepage.css";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const HomePage = () => {
+  const [userName, setUserName] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check localStorage for user info when component mounts
+    const storedName = localStorage.getItem('userName');
+    const storedToken = localStorage.getItem('token');
+    
+    if (storedName && storedToken) {
+      setUserName(storedName);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userId');
+    
+    // Update state
+    setUserName(null);
+    
+    // Optional: redirect to homepage (already there, but refreshes state)
+    window.location.reload();
+  };
+
   return (
     <div className="homepage">
       {/* Header */}
@@ -13,7 +39,14 @@ const HomePage = () => {
             <li><a href="#features">Features</a></li>
             <li><a href="#about">About</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><Link to="/login">Login</Link></li>
+            {userName ? (
+              <li className="user-section">
+                <span className="user-greeting">Welcome, {userName}!</span>
+                <button className="logout-button" onClick={handleLogout}>Logout</button>
+              </li>
+            ) : (
+              <li><Link to="/login">Login</Link></li>
+            )}
           </ul>
         </nav>
       </header>

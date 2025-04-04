@@ -22,23 +22,36 @@ const Signup = () => {
     setErrorMessage(""); // Reset error before request
 
     try {
+      console.log("Sending signup request with:", formData);
+      
       const response = await fetch("http://localhost:5000/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
-      const data = await response.json();
-
+      
+      // Log the raw response for debugging
+      const responseText = await response.text();
+      console.log("Raw response:", responseText);
+      
+      // Try to parse as JSON only if it looks like JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Failed to parse response as JSON:", parseError);
+        throw new Error("Server returned an invalid response. Please try again later.");
+      }
+    
       if (!response.ok) {
         throw new Error(data.message || "An unexpected error occurred.");
       }
-
+    
       alert("✅ " + data.message);
-      navigate("/login"); // Redirect to login after signup success
+      navigate("/login");
     } catch (error) {
       console.error("❌ Signup Error:", error);
-      setErrorMessage(error.message); // Display error in UI
+      setErrorMessage(error.message);
     }
   };
 
