@@ -109,4 +109,158 @@
   .user-form-page button[type="submit"]:hover {
     background-color: #45a049;
   }
+
+  /* Add these styles to your existing UserFormPage.css file */
+
+.form-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-buttons button {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.form-buttons button:first-child {
+  background-color: #4caf50;
+  color: white;
+  border: 1px solid #45a049;
+}
+
+.form-buttons button:first-child:hover {
+  background-color: #45a049;
+}
+
+.form-buttons button:first-child:disabled {
+  background-color: #a5d6a7;
+  cursor: not-allowed;
+}
+
+.form-buttons button:nth-child(2) {
+  background-color: #f44336;
+  color: white;
+  border: 1px solid #e53935;
+}
+
+.form-buttons button:nth-child(2):hover {
+  background-color: #e53935;
+}
+
+.form-buttons button:nth-child(3) {
+  background-color: #2196f3;
+  color: white;
+  border: 1px solid #1e88e5;
+}
+
+.form-buttons button:nth-child(3):hover {
+  background-color: #1e88e5;
+}
+
+.tip-result {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #e8f5e9;
+  border-radius: 8px;
+  border-left: 4px solid #4caf50;
+}
+
+.tip-result h3 {
+  color: #2e7d32;
+  margin-top: 0;
+}
+
+.calculation-method {
+  color: #616161;
+  font-style: italic;
+  margin-bottom: 0;
+}
+
+.ml-error {
+  color: #d32f2f;
+  background-color: #ffebee;
+  padding: 10px;
+  border-radius: 4px;
+  border-left: 4px solid #d32f2f;
+  margin-bottom: 15px;
+}
+
+input:disabled, 
+select:disabled, 
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.mood-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.mood-button.selected:disabled {
+  opacity: 0.9;
+}
   
+/* Add these styles to your existing UserFormPage.css file */
+
+.tip-breakdown {
+  margin-top: 15px;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  padding: 12px;
+  border-left: 3px solid #4caf50;
+}
+
+.tip-breakdown p {
+  margin: 5px 0;
+}
+
+.breakdown-header {
+  font-weight: 500;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.modifications-list {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 5px 0 10px 0;
+}
+
+.modifications-list li {
+  padding: 4px 8px;
+  margin-bottom: 2px;
+  background-color: #e8f5e9;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.mod-factor {
+  font-weight: 500;
+}
+
+.mod-effect {
+  color: #2e7d32;
+}
+
+/* For negative adjustments */
+.modifications-list li .mod-effect[data-negative="true"] {
+  color: #d32f2f;
+}
+.fast-casual-button {
+  width: 120px !important; /* Make the button smaller than the others */
+}
+
+.sublabel {
+  margin: 0;
+  font-size: 0.8em;
+  color: #666;
+}
+
+.label {
+  margin-bottom: 0; /* Remove margin between label and sublabel */
+}

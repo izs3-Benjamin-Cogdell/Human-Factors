@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import "./UserFormPage.css";
 import bad from "./images/bad.png";
 import ok from "./images/ok.png";
@@ -8,10 +8,10 @@ import great from "./images/great.png";
 
 import coffee from "./images/coffee.png";
 import italian from "./images/italian.png";
-import mexican from "./images/mexican.png";
+import fastCasual from "./images/fast casual.png";
 import labor from "./images/labor.jpg";
 import grocery from "./images/grocery.png";
-import tipPredictionModel from "../../models/tippredictionmodel.js";
+import tipPredictionModel from "../../models/tippredictionmodel";
 
 const moods = [
   { level: 1, image: terrible, label: "Terrible!" },
@@ -22,8 +22,8 @@ const moods = [
 ];
 
 const genre = [
-  { level: 1, image: mexican, label: "Mexican" },
-  { level: 2, image: italian, label: "Italian" },
+  { level: 1, image: fastCasual, label: "Fast Causal (takeout)" },
+  { level: 2, image: italian, label: "Sit Down" },
   { level: 3, image: coffee, label: "Coffee" },
   { level: 4, image: labor, label: "Labor" },
   { level: 5, image: grocery, label: "Grocery" },
@@ -47,11 +47,25 @@ const UserFormPage = () => {
   // New state variables for ML model
   const [day, setDay] = useState("");
   const [partySize, setPartySize] = useState(1);
-  const [usingML, setUsingML] = useState(true);
   const [mlError, setMlError] = useState(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [breakdownDetails, setBreakdownDetails] = useState(null);
+  const resetForm = useCallback(() => {
+    setBillAmount("");
+    setLocation("");
+    setTimeOfDay("");
+    setFanciness("");
+    setSelectedMood(null);
+    setSelectedGenre(null);
+    setTimeSpent("");
+    setDay("");
+    setPartySize(1);
+    setSuggestedTip(null);
+    setMlError(null);
+  }, []);
 
-  // Calculate tip using ML model
-  const predictTipML = () => {
+  // Get the base tip prediction from ML model
+  const getMLBaseTip = useCallback(() => {
     try {
       // Map time of day to binary value (0 for Lunch, 1 for Dinner)
       const timeValue = timeOfDay === "morning" ? 0 : 1;
@@ -68,23 +82,107 @@ const UserFormPage = () => {
       
       // Use the linear regression model to predict the tip
       const predictedTip = tipPredictionModel.predict(modelInputs);
-      console.log("ML Model predicted tip:", predictedTip);
+      console.log("ML Model base prediction:", predictedTip);
       
-      return predictedTip.toFixed(2);
+      return predictedTip;
     } catch (error) {
-      console.error("Prediction error:", error);
-      setMlError("Error making prediction. Using fallback calculation.");
+      console.error("ML prediction error:", error);
+      setMlError("Error making ML prediction. Using traditional calculation instead.");
       return null;
     }
-  };
+  }, [billAmount, day, partySize, timeOfDay]);
 
-  // Original tip calculation logic as fallback
-  const calculateTraditionalTip = () => {
+  // Apply modifiers to the ML base prediction
+  const applyModifiers = useCallback((baseTip) => {
+    let tipModifier = 1.0; // Start with no modification (100%)
+    
+    // Genre modifiers
+    
+    if (selectedGenre === 2) { // sitdown
+      tipModifier += 0.25; // 
+    }
+    if (selectedGenre === 3) { // Coffee
+      tipModifier -= 0.1; // -10%
+    }
+    if (selectedGenre === 4) { // Labor
+      tipModifier -= 0.1; // -10%
+    }
+    if (selectedGenre === 5) { // Coffee
+      tipModifier -= 0.25; // -10%
+    }
+    // Location modifiers
+    if (location === "Urban") {
+      tipModifier += 0.05; // +5%
+    }
+    if (location === "Tourist Area") {
+      tipModifier += 0.1; // +10%
+    }
+  
+    // Fanciness modifiers
+    if (fanciness === "Casual") {
+      tipModifier -= 0.05; // -5%
+    }
+    if (fanciness === "Fancy") {
+      tipModifier += 0.05; // +5%
+    }
+    
+    // Time spent modifier
+    const extraTime = Math.max(0, parseInt(timeSpent) - 60);
+    if (extraTime > 0) {
+      const timeBonus = Math.floor(extraTime / 10) * 0.02; // +2% per 10 minutes over an hour
+      tipModifier += timeBonus;
+    }
+    
+    // Apply all modifiers to get the modified tip
+    let modifiedTip = baseTip * tipModifier;
+    
+    // Service quality (mood) adjustments
+    if (selectedMood) {
+      switch (selectedMood) {
+        case 1: // Terrible
+          modifiedTip = Math.min(1, billAmount); // max $1 tip
+          break;
+        case 2: // Bad
+          modifiedTip *= 0.6; // 60% of calculated tip
+          break;
+        case 3: // Okay
+          modifiedTip *= 0.8; // 80% of calculated tip
+          break;
+        case 4: // Good
+          // Keep as is
+          break;
+        case 5: // Great
+          modifiedTip *= 1.2; // 120% of calculated tip
+          break;
+        default:
+          break;
+      }
+    }
+    
+    // Special case for labor jobs
+    if (selectedGenre === 4) {
+      const minTip = 5;
+      const maxTip = 100;
+      
+      if (modifiedTip < minTip) {
+        modifiedTip = minTip;
+      } else if (modifiedTip > maxTip) {
+        modifiedTip = maxTip;
+      }
+    }
+    
+    return modifiedTip.toFixed(2);
+  }, [billAmount, fanciness, location, selectedGenre, selectedMood, timeSpent]);
+
+  // Traditional tip calculation as fallback
+  const calculateTraditionalTip = useCallback(() => {
     let tipPercent = 20;
   
     // Genre modifiers
+    if (selectedGenre === 2) tipPercent += 15;
     if (selectedGenre === 3) tipPercent -= 10; // Coffee
     if (selectedGenre === 4) tipPercent -= 10; // Labor
+    if (selectedGenre === 5) tipPercent -= 15;
   
     // Location modifiers
     if (location === "Urban") tipPercent += 5;
@@ -95,7 +193,7 @@ const UserFormPage = () => {
   
     // Fanciness modifiers
     if (fanciness === "Casual") tipPercent -= 5;
-    if (fanciness === "Fancy") tipPercent += 5;
+    if (fanciness === "Fancy") tipPercent += 10;
   
     // Satisfaction level (selectedMood)
     switch (selectedMood) {
@@ -131,10 +229,11 @@ const UserFormPage = () => {
     }
   
     return tip.toFixed(2);
-  };
+  }, [billAmount, fanciness, location, selectedGenre, selectedMood, timeOfDay, timeSpent]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = useCallback((e) => {
     e.preventDefault();
+    setIsCalculating(true);
   
     const formData = {
       billAmount,
@@ -149,49 +248,30 @@ const UserFormPage = () => {
     };
   
     console.log("Form Submitted:", formData);
+    setMlError(null);
   
-    let finalTip;
-    
-    if (usingML) {
-      // Try ML prediction first
-      const mlTip = predictTipML();
-      if (mlTip !== null) {
-        finalTip = mlTip;
-        
-        // Apply service quality adjustments
-        if (selectedMood) {
-          const tipValue = parseFloat(mlTip);
-          switch (selectedMood) {
-            case 1: // Terrible
-              finalTip = Math.min(1, billAmount).toFixed(2); // max $1 tip
-              break;
-            case 2: // Bad
-              finalTip = (tipValue * 0.6).toFixed(2); // Reduce by 40%
-              break;
-            case 3: // Okay
-              finalTip = (tipValue * 0.8).toFixed(2); // Reduce by 20%
-              break;
-            case 4: // Good
-              // Keep as is
-              break;
-            case 5: // Great
-              finalTip = (tipValue * 1.2).toFixed(2); // Increase by 20%
-              break;
-            default:
-              break;
-          }
-        }
+    try {
+      let finalTip;
+      
+      // First get the ML base prediction
+      const mlBaseTip = getMLBaseTip();
+      
+      if (mlBaseTip !== null) {
+        // If ML prediction succeeded, apply modifiers
+        finalTip = applyModifiers(mlBaseTip);
       } else {
         // Fallback to traditional calculation if ML fails
         finalTip = calculateTraditionalTip();
       }
-    } else {
-      // Use traditional calculation if ML is disabled
-      finalTip = calculateTraditionalTip();
+      
+      setSuggestedTip(finalTip);
+    } catch (error) {
+      console.error("Error calculating tip:", error);
+      setMlError("An error occurred while calculating the tip.");
+    } finally {
+      setIsCalculating(false);
     }
-    
-    setSuggestedTip(finalTip);
-  };
+  }, [applyModifiers, billAmount, calculateTraditionalTip, day, fanciness, getMLBaseTip, location, partySize, selectedGenre, selectedMood, timeOfDay, timeSpent]);
 
   return (
     <div className="user-form-page">
@@ -208,6 +288,7 @@ const UserFormPage = () => {
             value={billAmount}
             onChange={(e) => setBillAmount(e.target.value)}
             required
+            disabled={isCalculating}
           />
         </div>
 
@@ -218,6 +299,7 @@ const UserFormPage = () => {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             required
+            disabled={isCalculating}
           >
             <option value="">-- Select Location --</option>
             {locations.map((loc) => (
@@ -235,6 +317,7 @@ const UserFormPage = () => {
             value={timeOfDay}
             onChange={(e) => setTimeOfDay(e.target.value)}
             required
+            disabled={isCalculating}
           >
             <option value="">-- Please select --</option>
             <option value="morning">Morning</option>
@@ -242,13 +325,14 @@ const UserFormPage = () => {
           </select>
         </div>
 
-        {/* Day of Week - New field */}
+        {/* Day of Week */}
         <div>
           <label>Day of the Week: </label>
           <select
             value={day}
             onChange={(e) => setDay(e.target.value)}
             required
+            disabled={isCalculating}
           >
             <option value="">-- Select Day --</option>
             {daysOfWeek.map((day) => (
@@ -259,7 +343,7 @@ const UserFormPage = () => {
           </select>
         </div>
 
-        {/* Party Size - New field */}
+        {/* Party Size */}
         <div>
           <label>Party Size: </label>
           <input
@@ -268,6 +352,7 @@ const UserFormPage = () => {
             value={partySize}
             onChange={(e) => setPartySize(e.target.value)}
             required
+            disabled={isCalculating}
           />
         </div>
 
@@ -278,6 +363,7 @@ const UserFormPage = () => {
             value={fanciness}
             onChange={(e) => setFanciness(e.target.value)}
             required
+            disabled={isCalculating}
           >
             <option value="">-- Select --</option>
             {fancinessLevels.map((level) => (
@@ -299,6 +385,7 @@ const UserFormPage = () => {
                 className={`mood-button ${selectedMood === mood.level ? "selected" : ""}`}
                 onClick={() => setSelectedMood(mood.level)}
                 title={mood.label}
+                disabled={isCalculating}
               >
                 <img
                   src={mood.image}
@@ -313,27 +400,32 @@ const UserFormPage = () => {
 
         {/* Genre Selector */}
         <div>
-          <label>What type of restaurant or business was it?</label>
-          <div className="mood-selector">
-            {genre.map((item) => (
-              <button
-                type="button"
-                key={item.level}
-                className={`mood-button ${selectedGenre === item.level ? "selected" : ""}`}
-                onClick={() => setSelectedGenre(item.level)}
-                title={item.label}
-              >
-                <img
-                  src={item.image}
-                  alt={item.label}
-                  className="mood-img"
-                />
-                <p className="label">{item.label}</p>
-              </button>
-            ))}
-          </div>
-          {selectedGenre && <p>You selected: {genre[selectedGenre - 1].label}</p>}
-        </div>
+  <label>What type of restaurant or business was it?</label>
+  <div className="mood-selector">
+    {genre.map((item) => (
+      <button
+        type="button"
+        key={item.level}
+        className={`mood-button ${selectedGenre === item.level ? "selected" : ""} ${item.level === 1 ? "fast-casual-button" : ""}`}
+        onClick={() => setSelectedGenre(item.level)}
+        title={item.label}
+        disabled={isCalculating}
+      >
+        <img
+          src={item.image}
+          alt={item.label}
+          className="mood-img"
+        />
+        <p className="label">{item.label}</p>
+        {item.sublabel && <p className="sublabel">{item.sublabel}</p>}
+      </button>
+    ))}
+  </div>
+  {selectedGenre && <p>You selected: {
+    selectedGenre === 1 ? `${genre[selectedGenre - 1].label} (${genre[selectedGenre - 1].sublabel})` : genre[selectedGenre - 1].label
+  }</p>}
+</div>
+
 
         {/* Time Spent */}
         <div>
@@ -344,33 +436,33 @@ const UserFormPage = () => {
             value={timeSpent}
             onChange={(e) => setTimeSpent(e.target.value)}
             required
+            disabled={isCalculating}
           />
         </div>
 
-        {/* ML Model Toggle */}
-        <div className="ml-toggle">
-          <label>
-            <input
-              type="checkbox"
-              checked={usingML}
-              onChange={(e) => setUsingML(e.target.checked)}
-            />
-            Use ML model for prediction
-          </label>
-        </div>
-
-        {/* Submit */}
-        <div style={{ marginTop: "20px" }}>
-          <button type="submit">Calculate Tip!</button>
+        {/* Submit and Reset Buttons */}
+        <div style={{ marginTop: "20px" }} className="form-buttons">
+          <button type="submit" disabled={isCalculating}>
+            {isCalculating ? "Calculating..." : "Calculate Tip!"}
+          </button>
+          
+          {suggestedTip && (
+            <button type="button" onClick={resetForm} disabled={isCalculating}>
+              Reset Form
+            </button>
+          )}
+          
+          {suggestedTip && (
+            <button type="button" onClick={() => setSuggestedTip(null)} disabled={isCalculating}>
+              Edit Values
+            </button>
+          )}
         </div>
       </form>
       
       {suggestedTip && (
         <div className="tip-result">
           <h3>Suggested Tip Amount: ${suggestedTip}</h3>
-          <p className="calculation-method">
-            {usingML && !mlError ? "Calculated using ML model with service quality adjustments" : "Calculated using traditional method"}
-          </p>
         </div>
       )}
     </div>
