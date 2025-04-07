@@ -251,8 +251,8 @@ button:disabled {
 .modifications-list li .mod-effect[data-negative="true"] {
   color: #d32f2f;
 }
-.fast-casual-button {
-  width: 120px !important; /* Make the button smaller than the others */
+.Fast-Food-button {
+  width: 120px !important; 
 }
 
 .sublabel {

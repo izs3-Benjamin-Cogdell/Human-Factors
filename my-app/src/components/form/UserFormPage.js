@@ -8,7 +8,7 @@ import great from "./images/great.png";
 
 import coffee from "./images/coffee.png";
 import italian from "./images/italian.png";
-import fastCasual from "./images/fast casual.png";
+import FastFood from "./images/FastFood.jpeg";
 import labor from "./images/labor.jpg";
 import grocery from "./images/grocery.png";
 import tipPredictionModel from "../../models/tippredictionmodel";
@@ -22,7 +22,7 @@ const moods = [
 ];
 
 const genre = [
-  { level: 1, image: fastCasual, label: "Fast Causal (takeout)" },
+  { level: 1, image: FastFood, label: "Fast Food (Takeout)" },
   { level: 2, image: italian, label: "Sit Down" },
   { level: 3, image: coffee, label: "Coffee" },
   { level: 4, image: labor, label: "Labor" },
@@ -406,7 +406,7 @@ const UserFormPage = () => {
       <button
         type="button"
         key={item.level}
-        className={`mood-button ${selectedGenre === item.level ? "selected" : ""} ${item.level === 1 ? "fast-casual-button" : ""}`}
+        className={`mood-button ${selectedGenre === item.level ? "selected" : ""} ${item.level === 1 ? "Fast-Food-button" : ""}`}
         onClick={() => setSelectedGenre(item.level)}
         title={item.label}
         disabled={isCalculating}
@@ -421,9 +421,13 @@ const UserFormPage = () => {
       </button>
     ))}
   </div>
-  {selectedGenre && <p>You selected: {
-    selectedGenre === 1 ? `${genre[selectedGenre - 1].label} (${genre[selectedGenre - 1].sublabel})` : genre[selectedGenre - 1].label
-  }</p>}
+  {selectedGenre && (
+  <p>
+    You selected: {genre[selectedGenre - 1].label}
+    {genre[selectedGenre - 1].sublabel && ` (${genre[selectedGenre - 1].sublabel})`}
+  </p>
+)}
+
 </div>
 
 
