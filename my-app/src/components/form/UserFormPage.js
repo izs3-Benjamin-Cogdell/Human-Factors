@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./UserFormPage.css";
 import bad from "./images/bad.png";
 import ok from "./images/ok.png";
@@ -11,8 +11,7 @@ import italian from "./images/italian.png";
 import mexican from "./images/mexican.png";
 import labor from "./images/labor.jpg";
 import grocery from "./images/grocery.png";
-import * as tf from '@tensorflow/tfjs';
-
+import tipPredictionModel from "../../models/tippredictionmodel.js";
 
 const moods = [
   { level: 1, image: terrible, label: "Terrible!" },
@@ -48,70 +47,33 @@ const UserFormPage = () => {
   // New state variables for ML model
   const [day, setDay] = useState("");
   const [partySize, setPartySize] = useState(1);
-  const [model, setModel] = useState(null);
-  const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [usingML, setUsingML] = useState(true);
   const [mlError, setMlError] = useState(null);
 
-  // Load ML model on component mount
-  useEffect(() => {
-    async function loadModel() {
-      try {
-        // Replace with your actual model URL
-        const loadedModel = await tf.loadLayersModel('YOUR_MODEL_URL_HERE');
-        setModel(loadedModel);
-        setIsModelLoaded(true);
-        console.log("ML model loaded successfully");
-      } catch (error) {
-        console.error("Failed to load model:", error);
-        setMlError("Couldn't load the ML model. Using fallback calculation.");
-        setUsingML(false);
-      }
-    }
-    
-    loadModel();
-  }, []);
-
-  // Function to predict tip using ML model
-  const predictTip = async () => {
-    if (!model) {
-      return null;
-    }
-    
+  // Calculate tip using ML model
+  const predictTipML = () => {
     try {
-      // Convert day name to numerical representation (0-6)
-      const dayNumber = daysOfWeek.findIndex(d => d.toLowerCase() === day.toLowerCase());
+      // Map time of day to binary value (0 for Lunch, 1 for Dinner)
+      const timeValue = timeOfDay === "morning" ? 0 : 1;
       
-      // Convert time of day to hour (approximate)
-      const hourOfDay = timeOfDay === "morning" ? 10 : 19;
+      // Prepare inputs for the model
+      const modelInputs = {
+        total_bill: parseFloat(billAmount),
+        time: timeValue,
+        size: parseInt(partySize),
+        day: day.charAt(0).toUpperCase() + day.slice(1) // Ensure proper capitalization
+      };
       
-      // Prepare inputs according to your model's expectations
-      // Adjust this based on your model's input requirements
-      const tensorInputs = tf.tensor2d([
-        [
-          parseFloat(timeSpent),      // time spent at restaurant
-          parseFloat(billAmount),     // bill amount
-          dayNumber,                  // day of week (0-6)
-          parseInt(partySize),        // party size
-          parseFloat(billAmount) / Math.max(1, parseInt(partySize)) // bill per person
-        ]
-      ]);
+      console.log("ML Model inputs:", modelInputs);
       
-      // Make prediction
-      const prediction = model.predict(tensorInputs);
+      // Use the linear regression model to predict the tip
+      const predictedTip = tipPredictionModel.predict(modelInputs);
+      console.log("ML Model predicted tip:", predictedTip);
       
-      // Get prediction data from tensor
-      const tipAmount = await prediction.data();
-      
-      // Cleanup tensors
-      tensorInputs.dispose();
-      prediction.dispose();
-      
-      return parseFloat(tipAmount[0]).toFixed(2);
+      return predictedTip.toFixed(2);
     } catch (error) {
       console.error("Prediction error:", error);
       setMlError("Error making prediction. Using fallback calculation.");
-      setUsingML(false);
       return null;
     }
   };
@@ -171,7 +133,7 @@ const UserFormPage = () => {
     return tip.toFixed(2);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
   
     const formData = {
@@ -190,17 +152,41 @@ const UserFormPage = () => {
   
     let finalTip;
     
-    if (usingML && isModelLoaded) {
+    if (usingML) {
       // Try ML prediction first
-      const mlTip = await predictTip();
+      const mlTip = predictTipML();
       if (mlTip !== null) {
         finalTip = mlTip;
+        
+        // Apply service quality adjustments
+        if (selectedMood) {
+          const tipValue = parseFloat(mlTip);
+          switch (selectedMood) {
+            case 1: // Terrible
+              finalTip = Math.min(1, billAmount).toFixed(2); // max $1 tip
+              break;
+            case 2: // Bad
+              finalTip = (tipValue * 0.6).toFixed(2); // Reduce by 40%
+              break;
+            case 3: // Okay
+              finalTip = (tipValue * 0.8).toFixed(2); // Reduce by 20%
+              break;
+            case 4: // Good
+              // Keep as is
+              break;
+            case 5: // Great
+              finalTip = (tipValue * 1.2).toFixed(2); // Increase by 20%
+              break;
+            default:
+              break;
+          }
+        }
       } else {
         // Fallback to traditional calculation if ML fails
         finalTip = calculateTraditionalTip();
       }
     } else {
-      // Use traditional calculation if ML is disabled or not loaded
+      // Use traditional calculation if ML is disabled
       finalTip = calculateTraditionalTip();
     }
     
@@ -368,9 +354,8 @@ const UserFormPage = () => {
               type="checkbox"
               checked={usingML}
               onChange={(e) => setUsingML(e.target.checked)}
-              disabled={!isModelLoaded}
             />
-            Use ML model for prediction {!isModelLoaded && "(Model not loaded)"}
+            Use ML model for prediction
           </label>
         </div>
 
@@ -384,7 +369,7 @@ const UserFormPage = () => {
         <div className="tip-result">
           <h3>Suggested Tip Amount: ${suggestedTip}</h3>
           <p className="calculation-method">
-            {usingML && isModelLoaded ? "Calculated using ML model" : "Calculated using traditional method"}
+            {usingML && !mlError ? "Calculated using ML model with service quality adjustments" : "Calculated using traditional method"}
           </p>
         </div>
       )}
