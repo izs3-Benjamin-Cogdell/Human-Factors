@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./UserFormPage.css";
 import bad from "./images/bad.png";
 import ok from "./images/ok.png";
@@ -11,29 +11,31 @@ import italian from "./images/italian.png";
 import mexican from "./images/mexican.png";
 import labor from "./images/labor.jpg";
 import grocery from "./images/grocery.png";
+import * as tf from '@tensorflow/tfjs';
 
 
 const moods = [
-    { level: 1, image: terrible, label: "Terrible!" },
-    { level: 2, image: bad, label: "Bad" },
-    { level: 3, image: ok, label: "Okay" },
-    { level: 4, image: good, label: "Good" },
-    { level: 5, image: great, label: "Great!" },
-  ];
-  
-  const genre = [
-    { level: 1, image: mexican, label: "Mexican" },
-    { level: 2, image: italian, label: "Italian" },
-    { level: 3, image: coffee, label: "Coffee" },
-    { level: 4, image: labor, label: "Labor" },
-    { level: 5, image: grocery, label: "Grocery" },
-  ];
+  { level: 1, image: terrible, label: "Terrible!" },
+  { level: 2, image: bad, label: "Bad" },
+  { level: 3, image: ok, label: "Okay" },
+  { level: 4, image: good, label: "Good" },
+  { level: 5, image: great, label: "Great!" },
+];
 
+const genre = [
+  { level: 1, image: mexican, label: "Mexican" },
+  { level: 2, image: italian, label: "Italian" },
+  { level: 3, image: coffee, label: "Coffee" },
+  { level: 4, image: labor, label: "Labor" },
+  { level: 5, image: grocery, label: "Grocery" },
+];
 
 const locations = ["Urban", "Suburban", "Rural", "Tourist Area"];
 const fancinessLevels = ["Casual", "Moderate", "Fancy"];
+const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const UserFormPage = () => {
+  // Original state variables
   const [billAmount, setBillAmount] = useState("");
   const [location, setLocation] = useState("");
   const [timeOfDay, setTimeOfDay] = useState("");
@@ -42,15 +44,85 @@ const UserFormPage = () => {
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [suggestedTip, setSuggestedTip] = useState(null);
   const [timeSpent, setTimeSpent] = useState("");
+  
+  // New state variables for ML model
+  const [day, setDay] = useState("");
+  const [partySize, setPartySize] = useState(1);
+  const [model, setModel] = useState(null);
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
+  const [usingML, setUsingML] = useState(true);
+  const [mlError, setMlError] = useState(null);
 
-  const calculateTip = () => {
+  // Load ML model on component mount
+  useEffect(() => {
+    async function loadModel() {
+      try {
+        // Replace with your actual model URL
+        const loadedModel = await tf.loadLayersModel('YOUR_MODEL_URL_HERE');
+        setModel(loadedModel);
+        setIsModelLoaded(true);
+        console.log("ML model loaded successfully");
+      } catch (error) {
+        console.error("Failed to load model:", error);
+        setMlError("Couldn't load the ML model. Using fallback calculation.");
+        setUsingML(false);
+      }
+    }
+    
+    loadModel();
+  }, []);
+
+  // Function to predict tip using ML model
+  const predictTip = async () => {
+    if (!model) {
+      return null;
+    }
+    
+    try {
+      // Convert day name to numerical representation (0-6)
+      const dayNumber = daysOfWeek.findIndex(d => d.toLowerCase() === day.toLowerCase());
+      
+      // Convert time of day to hour (approximate)
+      const hourOfDay = timeOfDay === "morning" ? 10 : 19;
+      
+      // Prepare inputs according to your model's expectations
+      // Adjust this based on your model's input requirements
+      const tensorInputs = tf.tensor2d([
+        [
+          parseFloat(timeSpent),      // time spent at restaurant
+          parseFloat(billAmount),     // bill amount
+          dayNumber,                  // day of week (0-6)
+          parseInt(partySize),        // party size
+          parseFloat(billAmount) / Math.max(1, parseInt(partySize)) // bill per person
+        ]
+      ]);
+      
+      // Make prediction
+      const prediction = model.predict(tensorInputs);
+      
+      // Get prediction data from tensor
+      const tipAmount = await prediction.data();
+      
+      // Cleanup tensors
+      tensorInputs.dispose();
+      prediction.dispose();
+      
+      return parseFloat(tipAmount[0]).toFixed(2);
+    } catch (error) {
+      console.error("Prediction error:", error);
+      setMlError("Error making prediction. Using fallback calculation.");
+      setUsingML(false);
+      return null;
+    }
+  };
+
+  // Original tip calculation logic as fallback
+  const calculateTraditionalTip = () => {
     let tipPercent = 20;
   
     // Genre modifiers
     if (selectedGenre === 3) tipPercent -= 10; // Coffee
-    if (selectedGenre === 4) { // Labor
-      tipPercent -= 10;
-    }
+    if (selectedGenre === 4) tipPercent -= 10; // Labor
   
     // Location modifiers
     if (location === "Urban") tipPercent += 5;
@@ -98,9 +170,8 @@ const UserFormPage = () => {
   
     return tip.toFixed(2);
   };
-  
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
   
     const formData = {
@@ -111,19 +182,35 @@ const UserFormPage = () => {
       serviceQuality: selectedMood,
       genre: selectedGenre,
       timeSpent,
+      day,
+      partySize
     };
   
     console.log("Form Submitted:", formData);
   
-    const calculatedTip = calculateTip();
-    setSuggestedTip(calculatedTip);
+    let finalTip;
+    
+    if (usingML && isModelLoaded) {
+      // Try ML prediction first
+      const mlTip = await predictTip();
+      if (mlTip !== null) {
+        finalTip = mlTip;
+      } else {
+        // Fallback to traditional calculation if ML fails
+        finalTip = calculateTraditionalTip();
+      }
+    } else {
+      // Use traditional calculation if ML is disabled or not loaded
+      finalTip = calculateTraditionalTip();
+    }
+    
+    setSuggestedTip(finalTip);
   };
-  
-  
 
   return (
     <div className="user-form-page">
       <h2>Suggested Tip Calculator</h2>
+      {mlError && <p className="ml-error">{mlError}</p>}
       <form onSubmit={handleSubmit}>
         {/* Bill Amount */}
         <div>
@@ -131,7 +218,7 @@ const UserFormPage = () => {
           <input
             type="number"
             min="0"
-            step="1.0"
+            step="0.01"
             value={billAmount}
             onChange={(e) => setBillAmount(e.target.value)}
             required
@@ -169,6 +256,35 @@ const UserFormPage = () => {
           </select>
         </div>
 
+        {/* Day of Week - New field */}
+        <div>
+          <label>Day of the Week: </label>
+          <select
+            value={day}
+            onChange={(e) => setDay(e.target.value)}
+            required
+          >
+            <option value="">-- Select Day --</option>
+            {daysOfWeek.map((day) => (
+              <option key={day} value={day.toLowerCase()}>
+                {day}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Party Size - New field */}
+        <div>
+          <label>Party Size: </label>
+          <input
+            type="number"
+            min="1"
+            value={partySize}
+            onChange={(e) => setPartySize(e.target.value)}
+            required
+          />
+        </div>
+
         {/* Fanciness */}
         <div>
           <label>Fanciness Level: </label>
@@ -199,11 +315,10 @@ const UserFormPage = () => {
                 title={mood.label}
               >
                 <img
-                src={mood.image}
-                alt={mood.label}
-                className="mood-img"
+                  src={mood.image}
+                  alt={mood.label}
+                  className="mood-img"
                 />
-
               </button>
             ))}
           </div>
@@ -211,29 +326,28 @@ const UserFormPage = () => {
         </div>
 
         {/* Genre Selector */}
-<div>
-  <label>What type of restaurant or business was it?</label>
-  <div className="mood-selector">
-    {genre.map((item) => (
-      <button
-        type="button"
-        key={item.level}
-        className={`mood-button ${selectedGenre === item.level ? "selected" : ""}`}
-        onClick={() => setSelectedGenre(item.level)}
-        title={item.label}
-      >
-        <img
-          src={item.image}
-          alt={item.label}
-          className="mood-img"
-        />
-        <p className="label">{item.label}</p>
-      </button>
-    ))}
-  </div>
-  {selectedGenre && <p>You selected: {genre[selectedGenre - 1].label}</p>}
-</div>
-
+        <div>
+          <label>What type of restaurant or business was it?</label>
+          <div className="mood-selector">
+            {genre.map((item) => (
+              <button
+                type="button"
+                key={item.level}
+                className={`mood-button ${selectedGenre === item.level ? "selected" : ""}`}
+                onClick={() => setSelectedGenre(item.level)}
+                title={item.label}
+              >
+                <img
+                  src={item.image}
+                  alt={item.label}
+                  className="mood-img"
+                />
+                <p className="label">{item.label}</p>
+              </button>
+            ))}
+          </div>
+          {selectedGenre && <p>You selected: {genre[selectedGenre - 1].label}</p>}
+        </div>
 
         {/* Time Spent */}
         <div>
@@ -247,17 +361,33 @@ const UserFormPage = () => {
           />
         </div>
 
+        {/* ML Model Toggle */}
+        <div className="ml-toggle">
+          <label>
+            <input
+              type="checkbox"
+              checked={usingML}
+              onChange={(e) => setUsingML(e.target.checked)}
+              disabled={!isModelLoaded}
+            />
+            Use ML model for prediction {!isModelLoaded && "(Model not loaded)"}
+          </label>
+        </div>
+
         {/* Submit */}
         <div style={{ marginTop: "20px" }}>
           <button type="submit">Calculate Tip!</button>
         </div>
       </form>
+      
       {suggestedTip && (
-  <div className="tip-result">
-    <h3>Suggested Tip Amount: ${suggestedTip}</h3>
-  </div>
-)}
-
+        <div className="tip-result">
+          <h3>Suggested Tip Amount: ${suggestedTip}</h3>
+          <p className="calculation-method">
+            {usingML && isModelLoaded ? "Calculated using ML model" : "Calculated using traditional method"}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
