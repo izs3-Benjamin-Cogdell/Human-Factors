@@ -40,10 +40,69 @@ const UserFormPage = () => {
   const [fanciness, setFanciness] = useState("");
   const [selectedMood, setSelectedMood] = useState(null);
   const [selectedGenre, setSelectedGenre] = useState(null);
+  const [suggestedTip, setSuggestedTip] = useState(null);
   const [timeSpent, setTimeSpent] = useState("");
+
+  const calculateTip = () => {
+    let tipPercent = 20;
+  
+    // Genre modifiers
+    if (selectedGenre === 3) tipPercent -= 10; // Coffee
+    if (selectedGenre === 4) { // Labor
+      tipPercent -= 10;
+    }
+  
+    // Location modifiers
+    if (location === "Urban") tipPercent += 5;
+    if (location === "Tourist Area") tipPercent += 10;
+  
+    // Time of day modifier
+    if (timeOfDay === "morning") tipPercent -= 2;
+  
+    // Fanciness modifiers
+    if (fanciness === "Casual") tipPercent -= 5;
+    if (fanciness === "Fancy") tipPercent += 5;
+  
+    // Satisfaction level (selectedMood)
+    switch (selectedMood) {
+      case 1: // Terrible
+        return Math.min(1, billAmount); // max $1 tip
+      case 2: // Bad
+        tipPercent -= 18;
+        break;
+      case 3: // Okay
+        tipPercent -= 10;
+        break;
+      case 4: // Good
+        tipPercent = 20;
+        break;
+      case 5: // Great
+        tipPercent += 5;
+        break;
+      default:
+        break;
+    }
+  
+    // Time spent modifier
+    const extraTime = Math.max(0, timeSpent - 60);
+    const timeBonus = Math.floor(extraTime / 10) * 2;
+    tipPercent += timeBonus;
+  
+    // Final tip calculation
+    const tip = (parseFloat(billAmount) * (tipPercent / 100));
+  
+    // If it's a labor job, apply min $5 and max $100
+    if (selectedGenre === 4) {
+      return Math.min(Math.max(tip, 5), 100).toFixed(2);
+    }
+  
+    return tip.toFixed(2);
+  };
+  
 
   const handleSubmit = (e) => {
     e.preventDefault();
+  
     const formData = {
       billAmount,
       location,
@@ -53,13 +112,18 @@ const UserFormPage = () => {
       genre: selectedGenre,
       timeSpent,
     };
+  
     console.log("Form Submitted:", formData);
-    // You can send this data to your backend or handle it however you like
+  
+    const calculatedTip = calculateTip();
+    setSuggestedTip(calculatedTip);
   };
+  
+  
 
   return (
     <div className="user-form-page">
-      <h2>TipSmart — Feedback Form</h2>
+      <h2>Suggested Tip Calculator</h2>
       <form onSubmit={handleSubmit}>
         {/* Bill Amount */}
         <div>
@@ -148,7 +212,7 @@ const UserFormPage = () => {
 
         {/* Genre Selector */}
 <div>
-  <label>What type of service or business was it?</label>
+  <label>What type of restaurant or business was it?</label>
   <div className="mood-selector">
     {genre.map((item) => (
       <button
@@ -185,9 +249,15 @@ const UserFormPage = () => {
 
         {/* Submit */}
         <div style={{ marginTop: "20px" }}>
-          <button type="submit">Submit</button>
+          <button type="submit">Calculate Tip!</button>
         </div>
       </form>
+      {suggestedTip && (
+  <div className="tip-result">
+    <h3>Suggested Tip Amount: ${suggestedTip}</h3>
+  </div>
+)}
+
     </div>
   );
 };

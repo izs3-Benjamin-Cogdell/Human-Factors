@@ -36,7 +36,7 @@ body {
   
   .hero {
     padding: 60px 20px;
-    background: #343a40;
+    background: #07a842;
     color: white;
   }
   
@@ -64,7 +64,7 @@ body {
   .feature-card {
     width: 30%;
     padding: 20px;
-    background: white;
+    background: rgb(192, 235, 230);
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   }
