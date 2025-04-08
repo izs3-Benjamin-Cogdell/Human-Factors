@@ -264,3 +264,201 @@ button:disabled {
 .label {
   margin-bottom: 0; /* Remove margin between label and sublabel */
 }
+.home-button-container {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 100;
+}
+
+.home-button {
+  padding: 8px 15px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.home-button:hover {
+  background-color: #e0e0e0;
+}
+/* Add these styles to your UserFormPage.css file */
+
+/* Home button styles */
+.home-button-container {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 100;
+}
+
+.home-button {
+  padding: 8px 15px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.home-button:hover {
+  background-color: #e0e0e0;
+}
+
+/* History section styles */
+.history-toggle-btn {
+  background-color: #4a90e2;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+.history-toggle-btn:hover {
+  background-color: #3a80d2;
+}
+
+.prefill-btn {
+  background-color: #5cb85c;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.prefill-btn:hover {
+  background-color: #4cA84c;
+}
+
+.quick-stats {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.tip-history {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.history-summary {
+  font-size: 16px;
+  margin-bottom: 15px;
+  color: #555;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 15px;
+}
+
+.history-table th {
+  background-color: #eee;
+  padding: 8px;
+  text-align: left;
+  border-bottom: 2px solid #ddd;
+}
+
+.history-table td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.close-history-btn {
+  background-color: #777;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.close-history-btn:hover {
+  background-color: #666;
+}
+
+/* Tip input and comparison styles */
+.actual-tip-input {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.actual-tip-input input {
+  width: 80px;
+  margin: 0 10px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.use-suggested-btn {
+  background-color: #4a90e2;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.use-suggested-btn:hover {
+  background-color: #3a80d2;
+}
+
+.save-btn {
+  background-color: #5cb85c;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.save-btn:hover {
+  background-color: #4cA84c;
+}
+
+.tip-comparison {
+  font-style: italic;
+  color: #666;
+  margin-top: 5px;
+}
+
+.comparison-feedback {
+  background-color: #f5f5f5;
+  border-left: 4px solid #4a90e2;
+  padding: 10px 15px;
+  margin-top: 15px;
+  border-radius: 0 4px 4px 0;
+}
+
+.feedback-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.feedback-buttons button {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.feedback-buttons button:hover {
+  background-color: #e0e0e0;
+}
