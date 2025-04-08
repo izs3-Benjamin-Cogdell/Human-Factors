@@ -65,55 +65,36 @@ const UserFormPage = () => {
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonMessage, setComparisonMessage] = useState("");
   const [actualTipAmount, setActualTipAmount] = useState("");
+  const [userId, setUserId] = useState(null);
   
-  // Load tip history from localStorage on component mount
+  // Load tip history from localStorage and check for user authentication
   useEffect(() => {
-    const savedTipHistory = localStorage.getItem('tipHistory');
-    if (savedTipHistory) {
-      const parsedHistory = JSON.parse(savedTipHistory);
-      setTipHistory(parsedHistory);
+    // Get user ID from localStorage (set during login)
+    const storedUserId = localStorage.getItem('userId');
+    
+    if (storedUserId) {
+      setUserId(storedUserId);
       
-      // Calculate average tip percentage
-      if (parsedHistory.length > 0) {
-        const totalPercentage = parsedHistory.reduce((sum, entry) => {
-          return sum + (entry.actualTipAmount / entry.billAmount) * 100;
-        }, 0);
+      // Fetch tip history from localStorage for now
+      const savedTipHistory = localStorage.getItem('tipHistory');
+      if (savedTipHistory) {
+        const parsedHistory = JSON.parse(savedTipHistory);
+        setTipHistory(parsedHistory);
         
-        setAverageTip((totalPercentage / parsedHistory.length).toFixed(1));
+        // Calculate average tip percentage
+        if (parsedHistory.length > 0) {
+          const totalPercentage = parsedHistory.reduce((sum, entry) => {
+            return sum + (entry.actualTipAmount / entry.billAmount) * 100;
+          }, 0);
+          
+          setAverageTip((totalPercentage / parsedHistory.length).toFixed(1));
+        }
       }
+      
+      // You would normally fetch tip history from your MongoDB here
+      // fetchTipHistoryFromDatabase(storedUserId);
     }
   }, []);
-  
-  // Function to pre-fill form with most common values
-  const prefillWithCommonValues = () => {
-    if (tipHistory.length === 0) return;
-    
-    // Find most common location
-    const locationCounts = {};
-    tipHistory.forEach(entry => {
-      locationCounts[entry.location] = (locationCounts[entry.location] || 0) + 1;
-    });
-    const mostCommonLocation = Object.entries(locationCounts)
-      .sort((a, b) => b[1] - a[1])[0][0];
-    
-    // Find most common genre
-    const genreCounts = {};
-    tipHistory.forEach(entry => {
-      genreCounts[entry.genre] = (genreCounts[entry.genre] || 0) + 1;
-    });
-    const mostCommonGenre = Object.entries(genreCounts)
-      .sort((a, b) => b[1] - a[1])[0][0];
-    
-    // Apply the most common values
-    setLocation(mostCommonLocation);
-    setSelectedGenre(parseInt(mostCommonGenre));
-    
-    // Use average party size
-    const avgPartySize = Math.round(
-      tipHistory.reduce((sum, entry) => sum + entry.partySize, 0) / tipHistory.length
-    );
-    setPartySize(avgPartySize || 1);
-  };
 
   const resetForm = useCallback(() => {
     setBillAmount("");
@@ -367,8 +348,13 @@ const UserFormPage = () => {
     const newHistory = [tipEntry, ...tipHistory];
     setTipHistory(newHistory);
     
-    // Save to localStorage
+    // Save to localStorage as temporary storage
     localStorage.setItem('tipHistory', JSON.stringify(newHistory));
+    
+    // If user is logged in, save to MongoDB
+    if (userId) {
+      saveTipToDatabase(tipEntry);
+    }
     
     // Calculate new average tip
     const totalPercentage = newHistory.reduce((sum, entry) => {
@@ -385,9 +371,9 @@ const UserFormPage = () => {
     if (Math.abs(tipDiff) < 0.5) {
       message = "You tipped very close to the suggested amount.";
     } else if (tipDiff > 0) {
-      message = `You tipped $${tipDiff.toFixed(2)} more than suggested. Was there a specific reason?`;
+      message = `You tipped ${tipDiff.toFixed(2)} more than suggested. Was there a specific reason?`;
     } else {
-      message = `You tipped $${Math.abs(tipDiff).toFixed(2)} less than suggested. Was there a specific reason?`;
+      message = `You tipped ${Math.abs(tipDiff).toFixed(2)} less than suggested. Was there a specific reason?`;
     }
     
     setComparisonMessage(message);
@@ -398,6 +384,82 @@ const UserFormPage = () => {
       resetForm();
       setShowHistory(true);
     }, 5000);
+  };
+  
+  // Function to save tip to MongoDB database
+  const saveTipToDatabase = async (tipEntry) => {
+    try {
+      // Get the auth token from localStorage
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.log("No authentication token found. User may not be logged in.");
+        return;
+      }
+      
+      // Make an API call to your backend
+      const response = await fetch('/api/tips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(tipEntry)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save tip to database');
+      }
+      
+      console.log('Tip saved to database successfully');
+    } catch (error) {
+      console.error('Error saving tip to database:', error);
+      // You could set an error state here to show to the user
+    }
+  };
+  
+  // Function to fetch tip history from database
+  const fetchTipHistoryFromDatabase = async (userId) => {
+    try {
+      // Get the auth token from localStorage
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.log("No authentication token found. User may not be logged in.");
+        return;
+      }
+      
+      // Make an API call to your backend
+      const response = await fetch(`/api/tips/user/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch tip history');
+      }
+      
+      const data = await response.json();
+      
+      // Update the state with the fetched tip history
+      setTipHistory(data);
+      
+      // Calculate average tip percentage
+      if (data.length > 0) {
+        const totalPercentage = data.reduce((sum, entry) => {
+          return sum + (entry.actualTipAmount / entry.billAmount) * 100;
+        }, 0);
+        
+        setAverageTip((totalPercentage / data.length).toFixed(1));
+      }
+      
+      console.log('Tip history fetched successfully');
+    } catch (error) {
+      console.error('Error fetching tip history:', error);
+      // You could set an error state here to show to the user
+    }
   };
   
   // Function to get genre label by level
@@ -437,13 +499,6 @@ const UserFormPage = () => {
         {tipHistory.length > 0 && !showHistory && (
           <div className="quick-stats">
             <p>Your average tip: {averageTip}%</p>
-            <button 
-              type="button" 
-              onClick={prefillWithCommonValues}
-              className="prefill-btn"
-            >
-              Auto-fill with your common choices
-            </button>
           </div>
         )}
       </div>
@@ -759,17 +814,4 @@ const UserFormPage = () => {
     </div>
   );
 };
-
-// If using with React Router, you can modify this component to use navigation directly
-// Example with React Router:
-// import { useNavigate } from 'react-router-dom';
-// 
-// const UserFormPageWithRouter = () => {
-//   const navigate = useNavigate();
-//   return <UserFormPage navigateToHome={() => navigate('/')} />;
-// };
-//
-// export default UserFormPageWithRouter;
-
-// For now, exporting the component with a prop for navigation
 export default UserFormPage;
