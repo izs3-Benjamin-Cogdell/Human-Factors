@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./UserFormPage.css";
 import bad from "./images/bad.png";
 import ok from "./images/ok.png";
@@ -34,6 +35,13 @@ const fancinessLevels = ["Casual", "Moderate", "Fancy"];
 const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const UserFormPage = () => {
+  const navigate = useNavigate();
+  
+  // Navigation function to return to homepage
+  const navigateToHome = () => {
+    navigate('/');
+  };
+
   // Original state variables
   const [billAmount, setBillAmount] = useState("");
   const [location, setLocation] = useState("");
@@ -49,7 +57,45 @@ const UserFormPage = () => {
   const [partySize, setPartySize] = useState(1);
   const [mlError, setMlError] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [breakdownDetails, setBreakdownDetails] = useState(null);
+  
+  // New state variables for history tracking
+  const [tipHistory, setTipHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [averageTip, setAverageTip] = useState(null);
+  const [showComparison, setShowComparison] = useState(false);
+  const [comparisonMessage, setComparisonMessage] = useState("");
+  const [actualTipAmount, setActualTipAmount] = useState("");
+  const [userId, setUserId] = useState(null);
+  
+  // Load tip history from localStorage and check for user authentication
+  useEffect(() => {
+    // Get user ID from localStorage (set during login)
+    const storedUserId = localStorage.getItem('userId');
+    
+    if (storedUserId) {
+      setUserId(storedUserId);
+      
+      // Fetch tip history from localStorage for now
+      const savedTipHistory = localStorage.getItem('tipHistory');
+      if (savedTipHistory) {
+        const parsedHistory = JSON.parse(savedTipHistory);
+        setTipHistory(parsedHistory);
+        
+        // Calculate average tip percentage
+        if (parsedHistory.length > 0) {
+          const totalPercentage = parsedHistory.reduce((sum, entry) => {
+            return sum + (entry.actualTipAmount / entry.billAmount) * 100;
+          }, 0);
+          
+          setAverageTip((totalPercentage / parsedHistory.length).toFixed(1));
+        }
+      }
+      
+      // You would normally fetch tip history from your MongoDB here
+      // fetchTipHistoryFromDatabase(storedUserId);
+    }
+  }, []);
+
   const resetForm = useCallback(() => {
     setBillAmount("");
     setLocation("");
@@ -62,6 +108,8 @@ const UserFormPage = () => {
     setPartySize(1);
     setSuggestedTip(null);
     setMlError(null);
+    setActualTipAmount("");
+    setShowComparison(false);
   }, []);
 
   // Get the base tip prediction from ML model
@@ -97,7 +145,6 @@ const UserFormPage = () => {
     let tipModifier = 1.0; // Start with no modification (100%)
     
     // Genre modifiers
-    
     if (selectedGenre === 2) { // sitdown
       tipModifier += 0.25; // 
     }
@@ -110,6 +157,7 @@ const UserFormPage = () => {
     if (selectedGenre === 5) { // Coffee
       tipModifier -= 0.25; // -10%
     }
+    
     // Location modifiers
     if (location === "Urban") {
       tipModifier += 0.05; // +5%
@@ -273,200 +321,497 @@ const UserFormPage = () => {
     }
   }, [applyModifiers, billAmount, calculateTraditionalTip, day, fanciness, getMLBaseTip, location, partySize, selectedGenre, selectedMood, timeOfDay, timeSpent]);
 
+  // Save the tip transaction to history
+  const saveToHistory = () => {
+    if (!actualTipAmount || !billAmount) {
+      alert("Please enter the actual tip amount you gave");
+      return;
+    }
+    
+    const tipEntry = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      billAmount: parseFloat(billAmount),
+      location,
+      timeOfDay,
+      fanciness,
+      serviceQuality: selectedMood,
+      genre: selectedGenre,
+      timeSpent: parseInt(timeSpent) || 0,
+      day,
+      partySize: parseInt(partySize),
+      suggestedTip: parseFloat(suggestedTip),
+      actualTipAmount: parseFloat(actualTipAmount),
+      tipPercentage: ((parseFloat(actualTipAmount) / parseFloat(billAmount)) * 100).toFixed(1)
+    };
+    
+    const newHistory = [tipEntry, ...tipHistory];
+    setTipHistory(newHistory);
+    
+    // Save to localStorage as temporary storage
+    localStorage.setItem('tipHistory', JSON.stringify(newHistory));
+    
+    // If user is logged in, save to MongoDB
+    if (userId) {
+      saveTipToDatabase(tipEntry);
+    }
+    
+    // Calculate new average tip
+    const totalPercentage = newHistory.reduce((sum, entry) => {
+      return sum + (entry.actualTipAmount / entry.billAmount) * 100;
+    }, 0);
+    
+    const newAverage = (totalPercentage / newHistory.length).toFixed(1);
+    setAverageTip(newAverage);
+    
+    // Compare with suggested tip
+    const tipDiff = parseFloat(actualTipAmount) - parseFloat(suggestedTip);
+    let message = "";
+    
+    if (Math.abs(tipDiff) < 0.5) {
+      message = "You tipped very close to the suggested amount.";
+    } else if (tipDiff > 0) {
+      message = `You tipped $${tipDiff.toFixed(2)} more than suggested. Was there a specific reason?`;
+    } else {
+      message = `You tipped $${Math.abs(tipDiff).toFixed(2)} less than suggested. Was there a specific reason?`;
+    }
+    
+    setComparisonMessage(message);
+    setShowComparison(true);
+    
+    // Reset form after a short delay to show the comparison
+    setTimeout(() => {
+      resetForm();
+      setShowHistory(true);
+    }, 5000);
+  };
+  
+  // Function to save tip to MongoDB database
+  const saveTipToDatabase = async (tipEntry) => {
+    try {
+      // Get the auth token from localStorage
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.log("No authentication token found. User may not be logged in.");
+        return;
+      }
+      
+      // Make an API call to your backend
+      const response = await fetch('/api/tips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(tipEntry)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save tip to database');
+      }
+      
+      console.log('Tip saved to database successfully');
+    } catch (error) {
+      console.error('Error saving tip to database:', error);
+      // You could set an error state here to show to the user
+    }
+  };
+  
+  // Function to fetch tip history from database
+  const fetchTipHistoryFromDatabase = async (userId) => {
+    try {
+      // Get the auth token from localStorage
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.log("No authentication token found. User may not be logged in.");
+        return;
+      }
+      
+      // Make an API call to your backend
+      const response = await fetch(`/api/tips/user/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch tip history');
+      }
+      
+      const data = await response.json();
+      
+      // Update the state with the fetched tip history
+      setTipHistory(data);
+      
+      // Calculate average tip percentage
+      if (data.length > 0) {
+        const totalPercentage = data.reduce((sum, entry) => {
+          return sum + (entry.actualTipAmount / entry.billAmount) * 100;
+        }, 0);
+        
+        setAverageTip((totalPercentage / data.length).toFixed(1));
+      }
+      
+      console.log('Tip history fetched successfully');
+    } catch (error) {
+      console.error('Error fetching tip history:', error);
+      // You could set an error state here to show to the user
+    }
+  };
+  
+  // Function to get genre label by level
+  const getGenreLabel = (level) => {
+    const genreItem = genre.find(item => item.level === level);
+    return genreItem ? genreItem.label : 'Unknown';
+  };
+  
+  // Function to get mood label by level
+  const getMoodLabel = (level) => {
+    const moodItem = moods.find(item => item.level === level);
+    return moodItem ? moodItem.label : 'Unknown';
+  };
+
   return (
     <div className="user-form-page">
+      <div className="home-button-container">
+        <button 
+          onClick={navigateToHome} 
+          className="home-button"
+        >
+          Return to Homepage
+        </button>
+      </div>
       <h2>Suggested Tip Calculator</h2>
-      {mlError && <p className="ml-error">{mlError}</p>}
-      <form onSubmit={handleSubmit}>
-        {/* Bill Amount */}
-        <div>
-          <label>Bill Amount ($): </label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={billAmount}
-            onChange={(e) => setBillAmount(e.target.value)}
-            required
-            disabled={isCalculating}
-          />
-        </div>
-
-        {/* Location */}
-        <div>
-          <label>Location: </label>
-          <select
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            required
-            disabled={isCalculating}
-          >
-            <option value="">-- Select Location --</option>
-            {locations.map((loc) => (
-              <option key={loc} value={loc}>
-                {loc}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Time of Day */}
-        <div>
-          <label>Time of Day: </label>
-          <select
-            value={timeOfDay}
-            onChange={(e) => setTimeOfDay(e.target.value)}
-            required
-            disabled={isCalculating}
-          >
-            <option value="">-- Please select --</option>
-            <option value="morning">Morning</option>
-            <option value="evening">Evening</option>
-          </select>
-        </div>
-
-        {/* Day of Week */}
-        <div>
-          <label>Day of the Week: </label>
-          <select
-            value={day}
-            onChange={(e) => setDay(e.target.value)}
-            required
-            disabled={isCalculating}
-          >
-            <option value="">-- Select Day --</option>
-            {daysOfWeek.map((day) => (
-              <option key={day} value={day.toLowerCase()}>
-                {day}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Party Size */}
-        <div>
-          <label>Party Size: </label>
-          <input
-            type="number"
-            min="1"
-            value={partySize}
-            onChange={(e) => setPartySize(e.target.value)}
-            required
-            disabled={isCalculating}
-          />
-        </div>
-
-        {/* Fanciness */}
-        <div>
-          <label>Fanciness Level: </label>
-          <select
-            value={fanciness}
-            onChange={(e) => setFanciness(e.target.value)}
-            required
-            disabled={isCalculating}
-          >
-            <option value="">-- Select --</option>
-            {fancinessLevels.map((level) => (
-              <option key={level} value={level}>
-                {level}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Service Quality (Mood) */}
-        <div>
-          <label>How was the service? </label>
-          <div className="mood-selector">
-            {moods.map((mood) => (
-              <button
-                type="button"
-                key={mood.level}
-                className={`mood-button ${selectedMood === mood.level ? "selected" : ""}`}
-                onClick={() => setSelectedMood(mood.level)}
-                title={mood.label}
-                disabled={isCalculating}
-              >
-                <img
-                  src={mood.image}
-                  alt={mood.label}
-                  className="mood-img"
-                />
-              </button>
-            ))}
+      
+      {/* Toggle button for showing history */}
+      <div className="history-controls">
+        <button 
+          type="button" 
+          onClick={() => setShowHistory(!showHistory)}
+          className="history-toggle-btn"
+        >
+          {showHistory ? "Hide History" : `View Tip History (${tipHistory.length})`}
+        </button>
+        
+        {tipHistory.length > 0 && !showHistory && (
+          <div className="quick-stats">
+            <p>Your average tip: {averageTip}%</p>
           </div>
-          {selectedMood && <p>You selected: {moods[selectedMood - 1].label}</p>}
-        </div>
-
-        {/* Genre Selector */}
-        <div>
-  <label>What type of restaurant or business was it?</label>
-  <div className="mood-selector">
-    {genre.map((item) => (
-      <button
-        type="button"
-        key={item.level}
-        className={`mood-button ${selectedGenre === item.level ? "selected" : ""} ${item.level === 1 ? "Fast-Food-button" : ""}`}
-        onClick={() => setSelectedGenre(item.level)}
-        title={item.label}
-        disabled={isCalculating}
-      >
-        <img
-          src={item.image}
-          alt={item.label}
-          className="mood-img"
-        />
-        <p className="label">{item.label}</p>
-        {item.sublabel && <p className="sublabel">{item.sublabel}</p>}
-      </button>
-    ))}
-  </div>
-  {selectedGenre && (
-  <p>
-    You selected: {genre[selectedGenre - 1].label}
-    {genre[selectedGenre - 1].sublabel && ` (${genre[selectedGenre - 1].sublabel})`}
-  </p>
-)}
-
-</div>
-
-
-        {/* Time Spent */}
-        <div>
-          <label>Time Spent at the Business (in minutes): </label>
-          <input
-            type="number"
-            min="0"
-            value={timeSpent}
-            onChange={(e) => setTimeSpent(e.target.value)}
-            required
-            disabled={isCalculating}
-          />
-        </div>
-
-        {/* Submit and Reset Buttons */}
-        <div style={{ marginTop: "20px" }} className="form-buttons">
-          <button type="submit" disabled={isCalculating}>
-            {isCalculating ? "Calculating..." : "Calculate Tip!"}
-          </button>
+        )}
+      </div>
+      
+      {/* History Section */}
+      {showHistory && tipHistory.length > 0 && (
+        <div className="tip-history">
+          <h3>Your Tipping History</h3>
+          <p className="history-summary">
+            You've recorded {tipHistory.length} tips with an average of {averageTip}% of the bill.
+          </p>
           
-          {suggestedTip && (
+          <table className="history-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Bill</th>
+                <th>Tip</th>
+                <th>%</th>
+                <th>Type</th>
+                <th>Service</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tipHistory.map(entry => (
+                <tr key={entry.id}>
+                  <td>{new Date(entry.date).toLocaleDateString()}</td>
+                  <td>${entry.billAmount.toFixed(2)}</td>
+                  <td>${entry.actualTipAmount.toFixed(2)}</td>
+                  <td>{entry.tipPercentage}%</td>
+                  <td>{getGenreLabel(entry.genre)}</td>
+                  <td>{getMoodLabel(entry.serviceQuality)}</td>
+                  <td>{entry.location}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          <button 
+            type="button" 
+            onClick={() => setShowHistory(false)}
+            className="close-history-btn"
+          >
+            Close History
+          </button>
+        </div>
+      )}
+      
+      {/* Error message */}
+      {mlError && <p className="ml-error">{mlError}</p>}
+      
+      {/* Main form */}
+      {!showHistory && (
+        <form onSubmit={handleSubmit}>
+          {/* Bill Amount */}
+          <div>
+            <label>Bill Amount ($): </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={billAmount}
+              onChange={(e) => setBillAmount(e.target.value)}
+              required
+              disabled={isCalculating || suggestedTip !== null}
+            />
+          </div>
+
+          {/* Location */}
+          <div>
+            <label>Location: </label>
+            <select
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              required
+              disabled={isCalculating || suggestedTip !== null}
+            >
+              <option value="">-- Select Location --</option>
+              {locations.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Time of Day */}
+          <div>
+            <label>Time of Day: </label>
+            <select
+              value={timeOfDay}
+              onChange={(e) => setTimeOfDay(e.target.value)}
+              required
+              disabled={isCalculating || suggestedTip !== null}
+            >
+              <option value="">-- Please select --</option>
+              <option value="morning">Morning</option>
+              <option value="evening">Evening</option>
+            </select>
+          </div>
+
+          {/* Day of Week */}
+          <div>
+            <label>Day of the Week: </label>
+            <select
+              value={day}
+              onChange={(e) => setDay(e.target.value)}
+              required
+              disabled={isCalculating || suggestedTip !== null}
+            >
+              <option value="">-- Select Day --</option>
+              {daysOfWeek.map((day) => (
+                <option key={day} value={day.toLowerCase()}>
+                  {day}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Party Size */}
+          <div>
+            <label>Party Size: </label>
+            <input
+              type="number"
+              min="1"
+              value={partySize}
+              onChange={(e) => setPartySize(e.target.value)}
+              required
+              disabled={isCalculating || suggestedTip !== null}
+            />
+          </div>
+
+          {/* Fanciness */}
+          <div>
+            <label>Fanciness Level: </label>
+            <select
+              value={fanciness}
+              onChange={(e) => setFanciness(e.target.value)}
+              required
+              disabled={isCalculating || suggestedTip !== null}
+            >
+              <option value="">-- Select --</option>
+              {fancinessLevels.map((level) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Service Quality (Mood) */}
+          <div>
+            <label>How was the service? </label>
+            <div className="mood-selector">
+              {moods.map((mood) => (
+                <button
+                  type="button"
+                  key={mood.level}
+                  className={`mood-button ${selectedMood === mood.level ? "selected" : ""}`}
+                  onClick={() => setSelectedMood(mood.level)}
+                  title={mood.label}
+                  disabled={isCalculating || suggestedTip !== null}
+                >
+                  <img
+                    src={mood.image}
+                    alt={mood.label}
+                    className="mood-img"
+                  />
+                </button>
+              ))}
+            </div>
+            {selectedMood && <p>You selected: {moods[selectedMood - 1].label}</p>}
+          </div>
+
+          {/* Genre Selector */}
+          <div>
+            <label>What type of restaurant or business was it?</label>
+            <div className="mood-selector">
+              {genre.map((item) => (
+                <button
+                  type="button"
+                  key={item.level}
+                  className={`mood-button ${selectedGenre === item.level ? "selected" : ""} ${item.level === 1 ? "Fast-Food-button" : ""}`}
+                  onClick={() => setSelectedGenre(item.level)}
+                  title={item.label}
+                  disabled={isCalculating || suggestedTip !== null}
+                >
+                  <img
+                    src={item.image}
+                    alt={item.label}
+                    className="mood-img"
+                  />
+                  <p className="label">{item.label}</p>
+                  {item.sublabel && <p className="sublabel">{item.sublabel}</p>}
+                </button>
+              ))}
+            </div>
+            {selectedGenre && (
+              <p>
+                You selected: {genre[selectedGenre - 1].label}
+                {genre[selectedGenre - 1].sublabel && ` (${genre[selectedGenre - 1].sublabel})`}
+              </p>
+            )}
+          </div>
+
+          {/* Time Spent */}
+          <div>
+            <label>Time Spent at the Business (in minutes): </label>
+            <input
+              type="number"
+              min="0"
+              value={timeSpent}
+              onChange={(e) => setTimeSpent(e.target.value)}
+              required
+              disabled={isCalculating || suggestedTip !== null}
+            />
+          </div>
+
+          {/* Submit and Reset Buttons */}
+          <div style={{ marginTop: "20px" }} className="form-buttons">
+            {!suggestedTip && (
+              <button type="submit" disabled={isCalculating}>
+                {isCalculating ? "Calculating..." : "Calculate Tip!"}
+              </button>
+            )}
+            
+            {suggestedTip && !showComparison && (
+              <>
+                <div className="actual-tip-input">
+                  <label>What did you actually tip? $</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={actualTipAmount}
+                    onChange={(e) => setActualTipAmount(e.target.value)}
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setActualTipAmount(suggestedTip)}
+                    className="use-suggested-btn"
+                  >
+                    Use Suggested
+                  </button>
+                </div>
+                
+                <button 
+                  type="button" 
+                  onClick={saveToHistory}
+                  disabled={!actualTipAmount}
+                  className="save-btn"
+                >
+                  Save This Tip
+                </button>
+                
+                <button type="button" onClick={() => setSuggestedTip(null)}>
+                  Edit Values
+                </button>
+              </>
+            )}
+            
             <button type="button" onClick={resetForm} disabled={isCalculating}>
               Reset Form
             </button>
-          )}
-          
-          {suggestedTip && (
-            <button type="button" onClick={() => setSuggestedTip(null)} disabled={isCalculating}>
-              Edit Values
-            </button>
-          )}
-        </div>
-      </form>
+          </div>
+        </form>
+      )}
       
-      {suggestedTip && (
+      {/* Tip Result */}
+      {suggestedTip && !showHistory && (
         <div className="tip-result">
           <h3>Suggested Tip Amount: ${suggestedTip}</h3>
+          <p>This is approximately {((parseFloat(suggestedTip) / parseFloat(billAmount)) * 100).toFixed(1)}% of your bill.</p>
+          
+          {tipHistory.length > 0 && (
+            <p className="tip-comparison">
+              Your average tip is {averageTip}% of the bill.
+            </p>
+          )}
+          
+          {showComparison && (
+            <div className="comparison-feedback">
+              <p>{comparisonMessage}</p>
+              <div className="feedback-buttons">
+                <button 
+                  type="button" 
+                  onClick={() => setShowComparison(false)}
+                >
+                  Service Quality
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setShowComparison(false)}
+                >
+                  Personal Preference
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setShowComparison(false)}
+                >
+                  Calculator Error
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setShowComparison(false)}
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
