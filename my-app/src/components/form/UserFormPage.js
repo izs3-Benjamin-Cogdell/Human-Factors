@@ -67,6 +67,16 @@ const UserFormPage = () => {
   const [actualTipAmount, setActualTipAmount] = useState("");
   const [userId, setUserId] = useState(null);
   
+  // Bill splitting state variables - properly moved inside component
+  const [showSplitOptions, setShowSplitOptions] = useState(false);
+  const [splitCount, setSplitCount] = useState(2);
+  const [splitType, setSplitType] = useState("equal"); // "equal" or "custom"
+  const [customSplits, setCustomSplits] = useState([
+    { id: 1, amount: 0, percentage: 50 },
+    { id: 2, amount: 0, percentage: 50 }
+  ]);
+  const [selectedSplitEntry, setSelectedSplitEntry] = useState(null);
+  
   // Load tip history from localStorage and check for user authentication
   useEffect(() => {
     // Get user ID from localStorage (set during login)
@@ -96,6 +106,7 @@ const UserFormPage = () => {
     }
   }, []);
 
+  // Reset split options when resetting the form
   const resetForm = useCallback(() => {
     setBillAmount("");
     setLocation("");
@@ -110,6 +121,15 @@ const UserFormPage = () => {
     setMlError(null);
     setActualTipAmount("");
     setShowComparison(false);
+    
+    // Reset split options
+    setShowSplitOptions(false);
+    setSplitCount(2);
+    setSplitType("equal");
+    setCustomSplits([
+      { id: 1, amount: 0, percentage: 50 },
+      { id: 2, amount: 0, percentage: 50 }
+    ]);
   }, []);
 
   // Get the base tip prediction from ML model
@@ -321,11 +341,181 @@ const UserFormPage = () => {
     }
   }, [applyModifiers, billAmount, calculateTraditionalTip, day, fanciness, getMLBaseTip, location, partySize, selectedGenre, selectedMood, timeOfDay, timeSpent]);
 
-  // Save the tip transaction to history
+  // BILL SPLITTING FUNCTIONS
+
+  // Function to open split details modal from history
+  const openSplitDetails = (entry) => {
+    setSelectedSplitEntry(entry);
+  };
+
+  // Add split person function
+  const addSplitPerson = () => {
+    if (splitCount < 10) { // Limit to 10 people for UI reasons
+      const newSplitCount = splitCount + 1;
+      setSplitCount(newSplitCount);
+      
+      // Update custom splits
+      if (splitType === "custom") {
+        // Calculate even percentage distribution
+        const evenPercentage = 100 / newSplitCount;
+        
+        // Update all percentages to be even
+        const updatedSplits = customSplits.map(split => ({
+          ...split,
+          percentage: evenPercentage
+        }));
+        
+        // Add new person
+        updatedSplits.push({
+          id: newSplitCount,
+          amount: 0,
+          percentage: evenPercentage
+        });
+        
+        setCustomSplits(updatedSplits);
+      }
+    }
+  };
+
+  // Remove split person function
+  const removeSplitPerson = () => {
+    if (splitCount > 2) { // Minimum 2 people for splitting
+      const newSplitCount = splitCount - 1;
+      setSplitCount(newSplitCount);
+      
+      // Update custom splits
+      if (splitType === "custom") {
+        // Remove last person
+        const updatedSplits = customSplits.slice(0, -1);
+        
+        // Calculate even percentage distribution
+        const evenPercentage = 100 / newSplitCount;
+        
+        // Update all percentages to be even
+        setCustomSplits(updatedSplits.map(split => ({
+          ...split,
+          percentage: evenPercentage
+        })));
+      }
+    }
+  };
+
+  // Handle custom split percentage changes
+  const handleCustomSplitChange = (id, newPercentage) => {
+    // Validate percentage
+    newPercentage = Math.max(0, Math.min(100, newPercentage));
+    
+    // Update percentage for selected person
+    const updatedSplits = customSplits.map(split => {
+      if (split.id === id) {
+        return { ...split, percentage: newPercentage };
+      }
+      return split;
+    });
+    
+    // Calculate amount for each person based on bill and percentage
+    const billValue = parseFloat(billAmount) || 0;
+    const updatedSplitsWithAmounts = updatedSplits.map(split => ({
+      ...split,
+      amount: (billValue * (split.percentage / 100)).toFixed(2)
+    }));
+    
+    setCustomSplits(updatedSplitsWithAmounts);
+  };
+
+  // Function to calculate even splits
+  const calculateEvenSplits = () => {
+    const billValue = parseFloat(billAmount) || 0;
+    const tipValue = parseFloat(actualTipAmount || suggestedTip) || 0;
+    const totalValue = billValue + tipValue;
+    
+    const perPersonAmount = (billValue / splitCount).toFixed(2);
+    const perPersonTip = (tipValue / splitCount).toFixed(2);
+    const perPersonTotal = (totalValue / splitCount).toFixed(2);
+    
+    return {
+      perPersonAmount,
+      perPersonTip,
+      perPersonTotal
+    };
+  };
+
+  // Function to calculate custom splits
+  const calculateCustomSplits = () => {
+    const billValue = parseFloat(billAmount) || 0;
+    const tipValue = parseFloat(actualTipAmount || suggestedTip) || 0;
+    
+    return customSplits.map(split => {
+      const splitPercentage = split.percentage / 100;
+      const splitAmount = (billValue * splitPercentage).toFixed(2);
+      const splitTip = (tipValue * splitPercentage).toFixed(2);
+      const splitTotal = (parseFloat(splitAmount) + parseFloat(splitTip)).toFixed(2);
+      
+      return {
+        id: split.id,
+        percentage: split.percentage,
+        amount: splitAmount,
+        tip: splitTip,
+        total: splitTotal
+      };
+    });
+  };
+
+  // Helper function to create equal split details
+  const createEqualSplitDetails = () => {
+    const billValue = parseFloat(billAmount);
+    const tipValue = parseFloat(actualTipAmount);
+    const perPersonBill = billValue / splitCount;
+    const perPersonTip = tipValue / splitCount;
+    
+    return Array.from({ length: splitCount }, (_, i) => ({
+      personId: i + 1,
+      percentage: 100 / splitCount,
+      amount: perPersonBill.toFixed(2),
+      tipAmount: perPersonTip.toFixed(2),
+      totalAmount: (perPersonBill + perPersonTip).toFixed(2)
+    }));
+  };
+
+  // Helper function to create custom split details
+  const createCustomSplitDetails = () => {
+    const billValue = parseFloat(billAmount);
+    const tipValue = parseFloat(actualTipAmount);
+    
+    return customSplits.map(split => {
+      const percentage = split.percentage;
+      const amount = (billValue * (percentage / 100));
+      const tipAmount = (tipValue * (percentage / 100));
+      
+      return {
+        personId: split.id,
+        percentage,
+        amount: amount.toFixed(2),
+        tipAmount: tipAmount.toFixed(2),
+        totalAmount: (amount + tipAmount).toFixed(2)
+      };
+    });
+  };
+
+  // Updated saveToHistory function with split information
   const saveToHistory = () => {
     if (!actualTipAmount || !billAmount) {
       alert("Please enter the actual tip amount you gave");
       return;
+    }
+    
+    // Prepare split information if it exists
+    let splitInfo = null;
+    
+    if (showSplitOptions) {
+      splitInfo = {
+        isSplit: true,
+        splitType: splitType,
+        splitCount: splitCount,
+        splitDetails: splitType === "equal" 
+          ? createEqualSplitDetails()
+          : createCustomSplitDetails()
+      };
     }
     
     const tipEntry = {
@@ -342,7 +532,15 @@ const UserFormPage = () => {
       partySize: parseInt(partySize),
       suggestedTip: parseFloat(suggestedTip),
       actualTipAmount: parseFloat(actualTipAmount),
-      tipPercentage: ((parseFloat(actualTipAmount) / parseFloat(billAmount)) * 100).toFixed(1)
+      tipPercentage: ((parseFloat(actualTipAmount) / parseFloat(billAmount)) * 100).toFixed(1),
+      
+      // Add split information if present
+      ...(splitInfo && {
+        isSplit: splitInfo.isSplit,
+        splitType: splitInfo.splitType,
+        splitCount: splitInfo.splitCount,
+        splitDetails: splitInfo.splitDetails
+      })
     };
     
     const newHistory = [tipEntry, ...tipHistory];
@@ -503,7 +701,7 @@ const UserFormPage = () => {
         )}
       </div>
       
-      {/* History Section */}
+      {/* History Section - Updated with Split Information */}
       {showHistory && tipHistory.length > 0 && (
         <div className="tip-history">
           <h3>Your Tipping History</h3>
@@ -521,6 +719,7 @@ const UserFormPage = () => {
                 <th>Type</th>
                 <th>Service</th>
                 <th>Location</th>
+                <th>Split</th>
               </tr>
             </thead>
             <tbody>
@@ -533,6 +732,16 @@ const UserFormPage = () => {
                   <td>{getGenreLabel(entry.genre)}</td>
                   <td>{getMoodLabel(entry.serviceQuality)}</td>
                   <td>{entry.location}</td>
+                  <td>
+                    {entry.isSplit ? (
+                      <button 
+                        className="view-split-btn"
+                        onClick={() => openSplitDetails(entry)}
+                      >
+                        View {entry.splitType === 'equal' ? 'Equal' : 'Custom'} Split
+                      </button>
+                    ) : 'No'}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -648,9 +857,7 @@ const UserFormPage = () => {
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Service Quality (Mood) */}
+          </div>{/* Service Quality (Mood) */}
           <div>
             <label>How was the service? </label>
             <div className="mood-selector">
@@ -812,6 +1019,201 @@ const UserFormPage = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+       {suggestedTip && !showHistory && (
+        <div className="split-bill-section">
+          <div className="split-bill-header">
+            <h3>Split the Bill</h3>
+            <button 
+              type="button"
+              onClick={() => setShowSplitOptions(!showSplitOptions)}
+              className="toggle-split-btn"
+            >
+              {showSplitOptions ? "Hide Split Options" : "Show Split Options"}
+            </button>
+          </div>
+          
+          {showSplitOptions && (
+            <div className="split-options">
+              <div className="split-controls">
+                <div className="split-type-selector">
+                  <label>Split Type:</label>
+                  <div className="split-type-buttons">
+                    <button
+                      type="button"
+                      className={`split-type-btn ${splitType === "equal" ? "active" : ""}`}
+                      onClick={() => setSplitType("equal")}
+                    >
+                      Split Equally
+                    </button>
+                    <button
+                      type="button"
+                      className={`split-type-btn ${splitType === "custom" ? "active" : ""}`}
+                      onClick={() => setSplitType("custom")}
+                    >
+                      Custom Split
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="split-count-control">
+                  <label>Number of People:</label>
+                  <div className="split-count-adjuster">
+                    <button 
+                      type="button" 
+                      onClick={removeSplitPerson}
+                      disabled={splitCount <= 2}
+                      className="split-btn"
+                    >
+                      -
+                    </button>
+                    <span className="split-count">{splitCount}</span>
+                    <button 
+                      type="button" 
+                      onClick={addSplitPerson}
+                      disabled={splitCount >= 10}
+                      className="split-btn"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {splitType === "equal" ? (
+                // Equal split UI
+                <div className="equal-split-result">
+                  <h4>Each Person Pays:</h4>
+                  <div className="split-result-grid">
+                    <div className="split-result-row header">
+                      <div>Item</div>
+                      <div>Per Person</div>
+                      <div>Total</div>
+                    </div>
+                    <div className="split-result-row">
+                      <div>Bill Amount</div>
+                      <div>${(parseFloat(billAmount) / splitCount).toFixed(2)}</div>
+                      <div>${parseFloat(billAmount).toFixed(2)}</div>
+                    </div>
+                    <div className="split-result-row">
+                      <div>Tip</div>
+                      <div>${(parseFloat(actualTipAmount || suggestedTip) / splitCount).toFixed(2)}</div>
+                      <div>${parseFloat(actualTipAmount || suggestedTip).toFixed(2)}</div>
+                    </div>
+                    <div className="split-result-row total">
+                      <div>Total</div>
+                      <div>${((parseFloat(billAmount) + parseFloat(actualTipAmount || suggestedTip)) / splitCount).toFixed(2)}</div>
+                      <div>${(parseFloat(billAmount) + parseFloat(actualTipAmount || suggestedTip)).toFixed(2)}</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Custom split UI
+                <div className="custom-split-result">
+                  <h4>Custom Split:</h4>
+                  <p className="custom-split-note">Adjust percentages below to customize how the bill is split</p>
+                  
+                  <div className="custom-splits-container">
+                    <div className="custom-split-row header">
+                      <div>Person</div>
+                      <div>Percentage</div>
+                      <div>Bill Amount</div>
+                      <div>Tip</div>
+                      <div>Total</div>
+                    </div>
+                    
+                    {calculateCustomSplits().map(split => (
+                      <div className="custom-split-row" key={split.id}>
+                        <div>Person {split.id}</div>
+                        <div className="percentage-input">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={split.percentage}
+                            onChange={(e) => handleCustomSplitChange(split.id, parseFloat(e.target.value))}
+                          />
+                          <span>%</span>
+                        </div>
+                        <div>${split.amount}</div>
+                        <div>${split.tip}</div>
+                        <div>${split.total}</div>
+                      </div>
+                    ))}
+                    
+                    <div className="custom-split-row total">
+                      <div>Total</div>
+                      <div>{customSplits.reduce((sum, split) => sum + split.percentage, 0).toFixed(1)}%</div>
+                      <div>${parseFloat(billAmount).toFixed(2)}</div>
+                      <div>${parseFloat(actualTipAmount || suggestedTip).toFixed(2)}</div>
+                      <div>${(parseFloat(billAmount) + parseFloat(actualTipAmount || suggestedTip)).toFixed(2)}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Split Details Modal */}
+      {selectedSplitEntry && (
+        <div className="split-details-modal">
+          <div className="split-modal-content">
+            <div className="split-modal-header">
+              <h3>Bill Split Details</h3>
+              <button 
+                className="close-modal-btn"
+                onClick={() => setSelectedSplitEntry(null)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="split-modal-body">
+              <div className="split-info-summary">
+                <p>
+                  <strong>Date:</strong> {new Date(selectedSplitEntry.date).toLocaleDateString()}
+                </p>
+                <p>
+                  <strong>Split Type:</strong> {selectedSplitEntry.splitType === 'equal' ? 'Equal' : 'Custom'}
+                </p>
+                <p>
+                  <strong>Number of People:</strong> {selectedSplitEntry.splitCount}
+                </p>
+                <p>
+                  <strong>Total Bill:</strong> ${selectedSplitEntry.billAmount.toFixed(2)}
+                </p>
+                <p>
+                  <strong>Total Tip:</strong> ${selectedSplitEntry.actualTipAmount.toFixed(2)}
+                </p>
+              </div>
+              
+              <table className="split-details-table">
+                <thead>
+                  <tr>
+                    <th>Person</th>
+                    <th>Percentage</th>
+                    <th>Bill Amount</th>
+                    <th>Tip Amount</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedSplitEntry.splitDetails.map(detail => (
+                    <tr key={detail.personId}>
+                      <td>Person {detail.personId}</td>
+                      <td>{detail.percentage.toFixed(1)}%</td>
+                      <td>${parseFloat(detail.amount).toFixed(2)}</td>
+                      <td>${parseFloat(detail.tipAmount).toFixed(2)}</td>
+                      <td>${parseFloat(detail.totalAmount).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
     </div>
