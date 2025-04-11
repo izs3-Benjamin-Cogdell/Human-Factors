@@ -1,117 +1,90 @@
 .user-form-page {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 30px;
-    font-family: Arial, sans-serif;
-  }
-  
-  .user-form-page h2 {
-    text-align: center;
-    margin-bottom: 30px;
-  }
-  
-  .tip-result {
-    margin-top: 30px;
-    text-align: center;
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #4caf50;
-  }
-  
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 30px;
+  font-family: Arial, sans-serif;
+}
 
-  /* Space between each form item */
-  .user-form-page form > div {
-    margin-bottom: 20px;
-  }
-  
-  /* Labels aligned and bold */
-  .user-form-page label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 8px;
-  }
-  
-  .label {
-    font-size: 0.85rem;
-    margin-top: 5px;
-    text-align: center;
-  }
-  
+.user-form-page h2 {
+  text-align: center;
+  margin-bottom: 30px;
+}
 
-  /* Input and select fields styled */
-  .user-form-page input[type="number"],
-  .user-form-page select {
-    width: 100%;
-    padding: 10px;
-    font-size: 1rem;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-  }
-  
-  /* Mood selector styling */
-  .mood-selector {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-top: 10px;
-  }
-  
-  .mood-section {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  
-  .mood-selector {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-top: 10px;
-  }
-  
-  .mood-button {
-    background: none;
-    border: 2px solid #ccc;
-    border-radius: 10px;
-    padding: 10px;
-    cursor: pointer;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-  }
-  
-  .mood-button:hover {
-    transform: scale(1.1);
-    border-color: #888;
-  }
-  
-  .mood-button.selected {
-    border-color: #4caf50;
-    background-color: #e0f7e9;
-  }
-  
-  .mood-img {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
-  }
-  
-  /* Submit button */
-  .user-form-page button[type="submit"] {
-    padding: 12px 24px;
-    font-size: 1rem;
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  
-  .user-form-page button[type="submit"]:hover {
-    background-color: #45a049;
-  }
+/* Space between each form item */
+.user-form-page form > div {
+  margin-bottom: 20px;
+}
 
-  /* Add these styles to your existing UserFormPage.css file */
+/* Labels aligned and bold */
+.user-form-page label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
 
+.label {
+  font-size: 0.85rem;
+  margin-top: 5px;
+  text-align: center;
+  margin-bottom: 0;
+}
+
+.sublabel {
+  margin: 0;
+  font-size: 0.8em;
+  color: #666;
+}
+
+/* Input and select fields styled */
+.user-form-page input[type="number"],
+.user-form-page select {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+/* Mood selector styling */
+.mood-selector {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.mood-button {
+  background: none;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.mood-button:hover {
+  transform: scale(1.1);
+  border-color: #888;
+}
+
+.mood-button.selected {
+  border-color: #4caf50;
+  background-color: #e0f7e9;
+}
+
+.mood-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.Fast-Food-button {
+  width: 120px !important; 
+}
+
+/* Submit button and form buttons */
 .form-buttons {
   display: flex;
   gap: 10px;
@@ -160,34 +133,7 @@
   background-color: #1e88e5;
 }
 
-.tip-result {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #e8f5e9;
-  border-radius: 8px;
-  border-left: 4px solid #4caf50;
-}
-
-.tip-result h3 {
-  color: #2e7d32;
-  margin-top: 0;
-}
-
-.calculation-method {
-  color: #616161;
-  font-style: italic;
-  margin-bottom: 0;
-}
-
-.ml-error {
-  color: #d32f2f;
-  background-color: #ffebee;
-  padding: 10px;
-  border-radius: 4px;
-  border-left: 4px solid #d32f2f;
-  margin-bottom: 15px;
-}
-
+/* Disabled elements */
 input:disabled, 
 select:disabled, 
 button:disabled {
@@ -203,88 +149,36 @@ button:disabled {
 .mood-button.selected:disabled {
   opacity: 0.9;
 }
-  
-/* Add these styles to your existing UserFormPage.css file */
 
-.tip-breakdown {
-  margin-top: 15px;
-  background-color: #f5f5f5;
-  border-radius: 6px;
-  padding: 12px;
-  border-left: 3px solid #4caf50;
-}
-
-.tip-breakdown p {
-  margin: 5px 0;
-}
-
-.breakdown-header {
-  font-weight: 500;
-  margin-top: 10px;
-  margin-bottom: 5px;
-}
-
-.modifications-list {
-  list-style-type: none;
-  padding-left: 0;
-  margin: 5px 0 10px 0;
-}
-
-.modifications-list li {
-  padding: 4px 8px;
-  margin-bottom: 2px;
-  background-color: #e8f5e9;
-  border-radius: 4px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.mod-factor {
-  font-weight: 500;
-}
-
-.mod-effect {
-  color: #2e7d32;
-}
-
-/* For negative adjustments */
-.modifications-list li .mod-effect[data-negative="true"] {
+/* Error messages */
+.ml-error {
   color: #d32f2f;
-}
-.Fast-Food-button {
-  width: 120px !important; 
-}
-
-.sublabel {
-  margin: 0;
-  font-size: 0.8em;
-  color: #666;
-}
-
-.label {
-  margin-bottom: 0; /* Remove margin between label and sublabel */
-}
-.home-button-container {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  z-index: 100;
-}
-
-.home-button {
-  padding: 8px 15px;
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
+  background-color: #ffebee;
+  padding: 10px;
   border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  border-left: 4px solid #d32f2f;
+  margin-bottom: 15px;
 }
 
-.home-button:hover {
-  background-color: #e0e0e0;
+/* Tip result display */
+.tip-result {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #e8f5e9;
+  border-radius: 8px;
+  border-left: 4px solid #4caf50;
 }
-/* Add these styles to your UserFormPage.css file */
+
+.tip-result h3 {
+  color: #2e7d32;
+  margin-top: 0;
+}
+
+.tip-comparison {
+  font-style: italic;
+  color: #666;
+  margin-top: 5px;
+}
 
 /* Home button styles */
 .home-button-container {
@@ -309,6 +203,13 @@ button:disabled {
 }
 
 /* History section styles */
+.history-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
 .history-toggle-btn {
   background-color: #4a90e2;
   color: white;
@@ -316,25 +217,10 @@ button:disabled {
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  margin-bottom: 15px;
 }
 
 .history-toggle-btn:hover {
   background-color: #3a80d2;
-}
-
-.prefill-btn {
-  background-color: #5cb85c;
-  color: white;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 10px;
-}
-
-.prefill-btn:hover {
-  background-color: #4cA84c;
 }
 
 .quick-stats {
@@ -388,7 +274,7 @@ button:disabled {
   background-color: #666;
 }
 
-/* Tip input and comparison styles */
+/* Actual tip input styles */
 .actual-tip-input {
   display: flex;
   align-items: center;
@@ -430,12 +316,7 @@ button:disabled {
   background-color: #4cA84c;
 }
 
-.tip-comparison {
-  font-style: italic;
-  color: #666;
-  margin-top: 5px;
-}
-
+/* Comparison feedback section */
 .comparison-feedback {
   background-color: #f5f5f5;
   border-left: 4px solid #4a90e2;
@@ -463,6 +344,7 @@ button:disabled {
   background-color: #e0e0e0;
 }
 
+/* Split bill section */
 .split-bill-section {
   background-color: #f5f5f5;
   border-radius: 8px;
@@ -491,7 +373,7 @@ button:disabled {
   background-color: #3a80d2;
 }
 
-/* Split Controls */
+/* Split controls */
 .split-controls {
   display: flex;
   justify-content: space-between;
@@ -558,7 +440,7 @@ button:disabled {
   text-align: center;
 }
 
-/* Equal Split Result */
+/* Equal split result */
 .equal-split-result {
   margin-top: 20px;
 }
@@ -588,7 +470,7 @@ button:disabled {
   border-top: 2px solid #aaa;
 }
 
-/* Custom Split Result */
+/* Custom split result */
 .custom-split-result {
   margin-top: 20px;
 }
@@ -639,7 +521,7 @@ button:disabled {
   border-radius: 4px;
 }
 
-/* Split History View */
+/* Split history view button */
 .view-split-btn {
   background-color: #6c757d;
   color: white;
@@ -654,7 +536,7 @@ button:disabled {
   background-color: #5a6268;
 }
 
-/* Split Details Modal */
+/* Split details modal */
 .split-details-modal {
   position: fixed;
   top: 0;
@@ -714,6 +596,7 @@ button:disabled {
   border-collapse: collapse;
 }
 
+.split-details-table th,
 .split-details-table td {
   border: 1px solid #ddd;
   padding: 10px;

@@ -6,9 +6,6 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true }
 });
 const TipSchema = new mongoose.Schema({
-  // Your existing fields...
-  
-  // Bill splitting fields
   isSplit: {
     type: Boolean,
     default: false
@@ -32,6 +29,4 @@ const TipSchema = new mongoose.Schema({
     totalAmount: Number
   }]
 });
-
-// Force MongoDB to use the "users" collection
 module.exports = mongoose.model("User", userSchema, "users");
