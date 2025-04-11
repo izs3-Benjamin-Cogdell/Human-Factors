@@ -341,8 +341,6 @@ const UserFormPage = () => {
     }
   }, [applyModifiers, billAmount, calculateTraditionalTip, day, fanciness, getMLBaseTip, location, partySize, selectedGenre, selectedMood, timeOfDay, timeSpent]);
 
-  // BILL SPLITTING FUNCTIONS
-
   // Function to open split details modal from history
   const openSplitDetails = (entry) => {
     setSelectedSplitEntry(entry);
