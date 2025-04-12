@@ -681,7 +681,7 @@ const UserFormPage = () => {
         </button>
       </div>
       <h2>Suggested Tip Calculator</h2>
-      
+
       {/* Toggle button for showing history */}
       <div className="history-controls">
         <button 
@@ -691,7 +691,6 @@ const UserFormPage = () => {
         >
           {showHistory ? "Hide History" : `View Tip History (${tipHistory.length})`}
         </button>
-        
         {tipHistory.length > 0 && !showHistory && (
           <div className="quick-stats">
             <p>Your average tip: {averageTip}%</p>

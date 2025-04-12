@@ -49,7 +49,7 @@ const HomePage = () => {
           </p>
 
           <div className="button-container">
-            <Link to="/calculator" className="nav-link">
+            <Link to="/get-started" className="nav-link">
               <button className="nav-button">
                 CALCULATE TIP
               </button>
