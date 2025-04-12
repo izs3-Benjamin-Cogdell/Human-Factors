@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./homepage.css";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const HomePage = () => {
   const [userName, setUserName] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Check localStorage for user info when component mounts
@@ -30,67 +29,93 @@ const HomePage = () => {
   };
 
   return (
-    <div className="homepage">
+    <div className="homepage-container">
       {/* Header */}
-      <header className="header">
-        <h1 className="logo">TipSmart</h1>
-        <nav>
-          <ul className="nav-links">
-          <li><Link to="/features">Features</Link></li>
-          <li><Link to="/about">About</Link></li>
-          <li><Link to="/contact">Contact</Link></li>
+      <header className="homepage-header">
+        <div className="brand-name">TIPSMART | CALCULATOR</div>
+        <button className="home-button">HOME</button>
+      </header>
 
+      <main className="main-content">
+        {/* Main Content */}
+        <div className="welcome-section">
+          <div className="emoji-container">
+            <div className="money-emoji">💰</div>
+          </div>
+          
+          <h1 className="welcome-title">Hi, Welcome to TipSmart.</h1>
+          <p className="welcome-subtitle">
+            Fast. Accurate. Convenient tipping.
+          </p>
+
+          <div className="button-container">
+            <Link to="/calculator" className="nav-link">
+              <button className="nav-button">
+                CALCULATE TIP
+              </button>
+            </Link>
+            
+            <Link to="/features" className="nav-link">
+              <button className="nav-button">
+                FEATURES
+              </button>
+            </Link>
+            
+            <Link to="/about" className="nav-link">
+              <button className="nav-button">
+                ABOUT
+              </button>
+            </Link>
+            
+            <Link to="/contact" className="nav-link">
+              <button className="nav-button">
+                CONTACT US
+              </button>
+            </Link>
             
             {userName ? (
-              <li className="user-section">
-                <span className="user-greeting">Welcome, {userName}!</span>
-                <button className="logout-button" onClick={handleLogout}>Logout</button>
-              </li>
+              <div className="user-welcome">
+                <span className="user-name">WELCOME, {userName.toUpperCase()}</span>
+                <button onClick={handleLogout} className="logout-btn">
+                  Logout
+                </button>
+              </div>
             ) : (
-              <li><Link to="/login">Login</Link></li>
+              <Link to="/login" className="nav-link">
+                <button className="nav-button">
+                  LOGIN
+                </button>
+              </Link>
             )}
-          </ul>
-        </nav>
-      </header>
-      
-      {/* Hero Section */}
-      <section className="hero">
-        <h2>Smarter Tipping, Made Easy</h2>
-        <p>Calculate tips effortlessly and make smarter financial decisions.</p>
-        <Link to="/get-started">
-  <button className="cta-button">Calculate Tip </button>
-</Link>
+          </div>
+        </div>
+      </main>
 
-      </section>
-      
-      {/* Features Section */}
-      <section id="features" className="features">
-        <h3>Why Use TipSmart?</h3>
-        <div className="feature-list">
-          <div className="feature-card">
-            <h4>💡 Accurate Calculations</h4>
-            <p>Instantly calculate the perfect tip based on your bill.</p>
+      {/* Features section */}
+      <section className="features-section">
+        <h3 className="features-title">Why Use TipSmart?</h3>
+        
+        <div className="features-list">
+          <div className="feature-item">
+            <h4 className="feature-heading">💡 Accurate Calculations</h4>
+            <p className="feature-description">Instantly calculate the perfect tip based on your bill.</p>
           </div>
-          <div className="feature-card">
-            <h4>⚙️ Customizable Percentages</h4>
-            <p>Set your own tipping preferences and round-up options.</p>
+          
+          <div className="feature-item">
+            <h4 className="feature-heading">⚙️ Customizable Percentages</h4>
+            <p className="feature-description">Set your own tipping preferences and round-up options.</p>
           </div>
-          <div className="feature-card">
-            <h4>🎯 Easy to Use</h4>
-            <p>A simple and intuitive interface designed for convenience.</p>
+          
+          <div className="feature-item">
+            <h4 className="feature-heading">🎯 Easy to Use</h4>
+            <p className="feature-description">A simple and intuitive interface designed for convenience.</p>
           </div>
         </div>
       </section>
-      
-      {/* Call to Action
-      <section className="cta">
-        <h3>Start Tipping Smarter Today!</h3>
-        <button className="cta-button">Download Now</button>
-      </section> */}
-      
+
       {/* Footer */}
-      <footer className="footer">
-        <p>&copy; 2025 TipSmart. All rights reserved.</p>
+      <footer className="homepage-footer">
+        <p className="copyright">&copy; 2025 TipSmart. Developed and secured by You.</p>
       </footer>
     </div>
   );
