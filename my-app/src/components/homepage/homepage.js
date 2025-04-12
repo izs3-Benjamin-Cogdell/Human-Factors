@@ -36,9 +36,11 @@ const HomePage = () => {
         <h1 className="logo">TipSmart</h1>
         <nav>
           <ul className="nav-links">
-            <li><a href="#features">Features</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#contact">Contact</a></li>
+          <li><Link to="/features">Features</Link></li>
+          <li><Link to="/about">About</Link></li>
+          <li><Link to="/contact">Contact</Link></li>
+
+            
             {userName ? (
               <li className="user-section">
                 <span className="user-greeting">Welcome, {userName}!</span>
