@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./UserFormPage.css";
 import bad from "./images/bad.png";
@@ -36,6 +36,11 @@ const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Fri
 
 const UserFormPage = () => {
   const navigate = useNavigate();
+  
+  // Reference for managing focus
+  const tipResultRef = useRef(null);
+  const splitOptionsRef = useRef(null);
+  const modalRef = useRef(null);
   
   // Navigation function to return to homepage
   const navigateToHome = () => {
@@ -106,6 +111,51 @@ const UserFormPage = () => {
     }
   }, []);
 
+  // Focus management for tip result
+  useEffect(() => {
+    if (suggestedTip && tipResultRef.current) {
+      tipResultRef.current.focus();
+    }
+  }, [suggestedTip]);
+
+  // Focus management for split options
+  useEffect(() => {
+    if (showSplitOptions && splitOptionsRef.current) {
+      splitOptionsRef.current.focus();
+    }
+  }, [showSplitOptions]);
+
+  // Focus management for modal
+  useEffect(() => {
+    if (selectedSplitEntry && modalRef.current) {
+      modalRef.current.focus();
+      
+      // Save the element that had focus before the modal opened
+      const previouslyFocusedElement = document.activeElement;
+      
+      // Return focus when modal closes
+      return () => {
+        if (previouslyFocusedElement) {
+          previouslyFocusedElement.focus();
+        }
+      };
+    }
+  }, [selectedSplitEntry]);
+
+  // Handle escape key for modal
+  useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === 'Escape' && selectedSplitEntry) {
+        setSelectedSplitEntry(null);
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [selectedSplitEntry]);
+
   // Reset split options when resetting the form
   const resetForm = useCallback(() => {
     setBillAmount("");
@@ -130,6 +180,12 @@ const UserFormPage = () => {
       { id: 1, amount: 0, percentage: 50 },
       { id: 2, amount: 0, percentage: 50 }
     ]);
+
+    // Set focus back to the first input field
+    const firstInput = document.querySelector('input[type="number"]');
+    if (firstInput) {
+      firstInput.focus();
+    }
   }, []);
 
   // Get the base tip prediction from ML model
@@ -566,6 +622,12 @@ const UserFormPage = () => {
 
     setComparisonMessage(message);
     setShowComparison(true);
+
+    // Announce to screen readers that the tip was saved
+    const announcement = document.getElementById('announcement');
+    if (announcement) {
+      announcement.textContent = "Your tip has been saved to history successfully.";
+    }
   };
   
   // Function to save tip to MongoDB database
@@ -656,17 +718,95 @@ const UserFormPage = () => {
     return moodItem ? moodItem.label : 'Unknown';
   };
 
+  // Handle keyboard navigation for mood buttons
+  const handleMoodKeyDown = (e, level) => {
+    switch (e.key) {
+      case ' ':
+      case 'Enter':
+        e.preventDefault();
+        setSelectedMood(level);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        const nextMood = Math.min(level + 1, 5);
+        document.querySelector(`.mood-button[data-level="${nextMood}"]`)?.focus();
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        const prevMood = Math.max(level - 1, 1);
+        document.querySelector(`.mood-button[data-level="${prevMood}"]`)?.focus();
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Handle keyboard navigation for genre buttons
+  const handleGenreKeyDown = (e, level) => {
+    switch (e.key) {
+      case ' ':
+      case 'Enter':
+        e.preventDefault();
+        setSelectedGenre(level);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        const nextGenre = Math.min(level + 1, 5);
+        document.querySelector(`.genre-button[data-level="${nextGenre}"]`)?.focus();
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        const prevGenre = Math.max(level - 1, 1);
+        document.querySelector(`.genre-button[data-level="${prevGenre}"]`)?.focus();
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Focus trap for modal
+  const handleModalTabKey = (e) => {
+    if (!modalRef.current) return;
+    
+    const focusableElements = modalRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    
+    // If shift+tab pressed and focus on first element, move to last element
+    if (e.shiftKey && document.activeElement === firstElement) {
+      e.preventDefault();
+      lastElement.focus();
+    } 
+    // If tab pressed and focus on last element, move to first element
+    else if (!e.shiftKey && document.activeElement === lastElement) {
+      e.preventDefault();
+      firstElement.focus();
+    }
+  };
+
   return (
     <div className="user-form-page">
+      {/* Visually hidden element for screen reader announcements */}
+      <div 
+        id="announcement" 
+        className="sr-only" 
+        aria-live="polite" 
+        aria-atomic="true">
+      </div>
+
       <div className="home-button-container">
         <button 
           onClick={navigateToHome} 
           className="home-button"
+          aria-label="Return to Homepage"
         >
           Return to Homepage
         </button>
       </div>
-      <h2>Suggested Tip Calculator</h2>
+      <h1>Suggested Tip Calculator</h1>
 
       {/* Toggle button for showing history */}
       <div className="history-controls">
@@ -674,6 +814,8 @@ const UserFormPage = () => {
           type="button" 
           onClick={() => setShowHistory(!showHistory)}
           className="history-toggle-btn"
+          aria-expanded={showHistory}
+          aria-controls="history-section"
         >
           {showHistory ? "Hide History" : `View Tip History (${tipHistory.length})`}
         </button>
@@ -686,23 +828,23 @@ const UserFormPage = () => {
       
       {/* History Section - Updated with Split Information */}
       {showHistory && tipHistory.length > 0 && (
-        <div className="tip-history">
-          <h3>Your Tipping History</h3>
+        <div id="history-section" className="tip-history" aria-labelledby="history-heading">
+          <h2 id="history-heading">Your Tipping History</h2>
           <p className="history-summary">
             You've recorded {tipHistory.length} tips with an average of {averageTip}% of the bill.
           </p>
           
-          <table className="history-table">
+          <table className="history-table" aria-label="Tip history details">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Bill</th>
-                <th>Tip</th>
-                <th>%</th>
-                <th>Type</th>
-                <th>Service</th>
-                <th>Location</th>
-                <th>Split</th>
+                <th scope="col">Date</th>
+                <th scope="col">Bill</th>
+                <th scope="col">Tip</th>
+                <th scope="col">%</th>
+                <th scope="col">Type</th>
+                <th scope="col">Service</th>
+                <th scope="col">Location</th>
+                <th scope="col">Split</th>
               </tr>
             </thead>
             <tbody>
@@ -720,6 +862,7 @@ const UserFormPage = () => {
                       <button 
                         className="view-split-btn"
                         onClick={() => openSplitDetails(entry)}
+                        aria-label={`View ${entry.splitType === 'equal' ? 'Equal' : 'Custom'} Split details for bill from ${new Date(entry.date).toLocaleDateString()}`}
                       >
                         View {entry.splitType === 'equal' ? 'Equal' : 'Custom'} Split
                       </button>
@@ -734,6 +877,7 @@ const UserFormPage = () => {
             type="button" 
             onClick={() => setShowHistory(false)}
             className="close-history-btn"
+            aria-label="Close history view"
           >
             Close History
           </button>
@@ -741,15 +885,17 @@ const UserFormPage = () => {
       )}
       
       {/* Error message */}
-      {mlError && <p className="ml-error">{mlError}</p>}
+      {mlError && <p className="ml-error" role="alert">{mlError}</p>}
       
       {/* Main form */}
       {!showHistory && (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} aria-labelledby="form-heading">
+          <h2 id="form-heading" className="sr-only">Tip Calculator Form</h2>
           {/* Bill Amount */}
-          <div>
-            <label>Bill Amount ($): </label>
+          <div className="form-group">
+            <label htmlFor="bill-amount">Bill Amount ($): </label>
             <input
+              id="bill-amount"
               type="number"
               min="0"
               step="0.01"
@@ -757,17 +903,21 @@ const UserFormPage = () => {
               onChange={(e) => setBillAmount(e.target.value)}
               required
               disabled={isCalculating || suggestedTip !== null}
+              aria-describedby="bill-amount-description"
             />
+            <span id="bill-amount-description" className="sr-only">Enter the total bill amount in dollars</span>
           </div>
 
           {/* Location */}
-          <div>
-            <label>Location: </label>
+          <div className="form-group">
+            <label htmlFor="location">Location: </label>
             <select
+              id="location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               required
               disabled={isCalculating || suggestedTip !== null}
+              aria-describedby="location-description"
             >
               <option value="">-- Select Location --</option>
               {locations.map((loc) => (
@@ -776,12 +926,14 @@ const UserFormPage = () => {
                 </option>
               ))}
             </select>
+            <span id="location-description" className="sr-only">Select the location type where service was provided</span>
           </div>
 
           {/* Time of Day */}
-          <div>
-            <label>Time of Day: </label>
+          <div className="form-group">
+            <label htmlFor="time-of-day">Time of Day: </label>
             <select
+              id="time-of-day"
               value={timeOfDay}
               onChange={(e) => setTimeOfDay(e.target.value)}
               required
@@ -794,9 +946,10 @@ const UserFormPage = () => {
           </div>
 
           {/* Day of Week */}
-          <div>
-            <label>Day of the Week: </label>
+          <div className="form-group">
+            <label htmlFor="day-of-week">Day of the Week: </label>
             <select
+              id="day-of-week"
               value={day}
               onChange={(e) => setDay(e.target.value)}
               required
@@ -812,22 +965,26 @@ const UserFormPage = () => {
           </div>
 
           {/* Party Size */}
-          <div>
-            <label>Party Size: </label>
+          <div className="form-group">
+            <label htmlFor="party-size">Party Size: </label>
             <input
+              id="party-size"
               type="number"
               min="1"
               value={partySize}
               onChange={(e) => setPartySize(e.target.value)}
               required
               disabled={isCalculating || suggestedTip !== null}
+              aria-describedby="party-size-description"
             />
+            <span id="party-size-description" className="sr-only">Enter the number of people in your party</span>
           </div>
 
           {/* Fanciness */}
-          <div>
-            <label>Fanciness Level: </label>
+          <div className="form-group">
+            <label htmlFor="fanciness">Fanciness Level: </label>
             <select
+              id="fanciness"
               value={fanciness}
               onChange={(e) => setFanciness(e.target.value)}
               required
@@ -840,65 +997,83 @@ const UserFormPage = () => {
                 </option>
               ))}
             </select>
-          </div>{/* Service Quality (Mood) */}
-          <div>
-            <label>How was the service? </label>
-            <div className="mood-selector">
-              {moods.map((mood) => (
-                <button
-                  type="button"
-                  key={mood.level}
-                  className={`mood-button ${selectedMood === mood.level ? "selected" : ""}`}
-                  onClick={() => setSelectedMood(mood.level)}
-                  title={mood.label}
-                  disabled={isCalculating || suggestedTip !== null}
-                >
-                  <img
-                    src={mood.image}
-                    alt={mood.label}
-                    className="mood-img"
-                  />
-                </button>
-              ))}
-            </div>
-            {selectedMood && <p>You selected: {moods[selectedMood - 1].label}</p>}
+          </div>
+          
+          {/* Service Quality (Mood) */}
+          <div className="form-group">
+            <fieldset>
+              <legend>How was the service?</legend>
+              <div className="mood-selector" role="radiogroup" aria-label="Service quality rating">
+                {moods.map((mood) => (
+                  <button
+                    type="button"
+                    key={mood.level}
+                    className={`mood-button ${selectedMood === mood.level ? "selected" : ""}`}
+                    onClick={() => setSelectedMood(mood.level)}
+                    disabled={isCalculating || suggestedTip !== null}
+                    aria-label={mood.label}
+                    aria-pressed={selectedMood === mood.level}
+                    data-level={mood.level}
+                    onKeyDown={(e) => handleMoodKeyDown(e, mood.level)}
+                  >
+                    <img
+                      src={mood.image}
+                      alt=""
+                      className="mood-img"
+                    />
+                    <span className="mood-label">{mood.label}</span>
+                  </button>
+                ))}
+              </div>
+              {selectedMood && (
+                <div aria-live="polite" className="selection-feedback">
+                  You selected: {moods[selectedMood - 1].label}
+                </div>
+              )}
+            </fieldset>
           </div>
 
           {/* Genre Selector */}
-          <div>
-            <label>What type of restaurant or business was it?</label>
-            <div className="mood-selector">
-              {genre.map((item) => (
-                <button
-                  type="button"
-                  key={item.level}
-                  className={`mood-button ${selectedGenre === item.level ? "selected" : ""} ${item.level === 1 ? "Fast-Food-button" : ""}`}
-                  onClick={() => setSelectedGenre(item.level)}
-                  title={item.label}
-                  disabled={isCalculating || suggestedTip !== null}
-                >
-                  <img
-                    src={item.image}
-                    alt={item.label}
-                    className="mood-img"
-                  />
-                  <p className="label">{item.label}</p>
-                  {item.sublabel && <p className="sublabel">{item.sublabel}</p>}
-                </button>
-              ))}
-            </div>
-            {selectedGenre && (
-              <p>
-                You selected: {genre[selectedGenre - 1].label}
-                {genre[selectedGenre - 1].sublabel && ` (${genre[selectedGenre - 1].sublabel})`}
-              </p>
-            )}
+          <div className="form-group">
+            <fieldset>
+              <legend>What type of restaurant or business was it?</legend>
+              <div className="mood-selector" role="radiogroup" aria-label="Business type selection">
+                {genre.map((item) => (
+                  <button
+                    type="button"
+                    key={item.level}
+                    className={`mood-button ${selectedGenre === item.level ? "selected" : ""} ${item.level === 1 ? "Fast-Food-button" : ""}`}
+                    onClick={() => setSelectedGenre(item.level)}
+                    disabled={isCalculating || suggestedTip !== null}
+                    aria-label={item.label}
+                    aria-pressed={selectedGenre === item.level}
+                    data-level={item.level}
+                    onKeyDown={(e) => handleGenreKeyDown(e, item.level)}
+                  >
+                    <img
+                      src={item.image}
+                      alt=""
+                      className="mood-img"
+                    />
+                    <p className="label">{item.label}</p>
+                    {item.sublabel && <p className="sublabel">{item.sublabel}</p>}
+                  </button>
+                ))}
+              </div>
+              {selectedGenre && (
+                <div aria-live="polite" className="selection-feedback">
+                  You selected: {genre[selectedGenre - 1].label}
+                  {genre[selectedGenre - 1].sublabel && ` (${genre[selectedGenre - 1].sublabel})`}
+                </div>
+              )}
+            </fieldset>
           </div>
 
           {/* Time Spent */}
-          <div>
-            <label>Time Spent at the Business (in minutes): </label>
+          <div className="form-group">
+            <label htmlFor="time-spent">Time Spent at the Business (in minutes): </label>
             <input
+              id="time-spent"
               type="number"
               min="0"
               value={timeSpent}
@@ -909,9 +1084,13 @@ const UserFormPage = () => {
           </div>
 
           {/* Submit and Reset Buttons */}
-          <div style={{ marginTop: "20px" }} className="form-buttons">
+          <div className="form-buttons">
             {!suggestedTip && (
-              <button type="submit" disabled={isCalculating}>
+              <button 
+                type="submit" 
+                disabled={isCalculating}
+                aria-busy={isCalculating}
+              >
                 {isCalculating ? "Calculating..." : "Calculate Tip!"}
               </button>
             )}
@@ -919,19 +1098,23 @@ const UserFormPage = () => {
             {suggestedTip && !showComparison && (
               <>
                 <div className="actual-tip-input">
-                  <label>What did you actually tip? $</label>
+                  <label htmlFor="actual-tip">What did you actually tip? $</label>
                   <input
+                    id="actual-tip"
                     type="number"
                     min="0"
                     step="0.01"
                     value={actualTipAmount}
                     onChange={(e) => setActualTipAmount(e.target.value)}
                     required
+                    aria-describedby="actual-tip-description"
                   />
+                  <span id="actual-tip-description" className="sr-only">Enter the actual tip amount you gave</span>
                   <button 
                     type="button" 
                     onClick={() => setActualTipAmount(suggestedTip)}
                     className="use-suggested-btn"
+                    aria-label="Use suggested tip amount"
                   >
                     Use Suggested
                   </button>
@@ -942,17 +1125,27 @@ const UserFormPage = () => {
                   onClick={saveToHistory}
                   disabled={!actualTipAmount}
                   className="save-btn"
+                  aria-label="Save this tip to history"
                 >
                   Save This Tip
                 </button>
                 
-                <button type="button" onClick={() => setSuggestedTip(null)}>
+                <button 
+                  type="button" 
+                  onClick={() => setSuggestedTip(null)}
+                  aria-label="Go back to edit form values"
+                >
                   Edit Values
                 </button>
               </>
             )}
             
-            <button type="button" onClick={resetForm} disabled={isCalculating}>
+            <button 
+              type="button" 
+              onClick={resetForm} 
+              disabled={isCalculating}
+              aria-label="Reset all form fields"
+            >
               Reset Form
             </button>
           </div>
@@ -961,7 +1154,12 @@ const UserFormPage = () => {
       
       {/* Tip Result */}
       {suggestedTip && !showHistory && (
-        <div className="tip-result">
+        <div 
+          className="tip-result" 
+          aria-live="polite" 
+          tabIndex="-1"
+          ref={tipResultRef}
+        >
           <h3>Suggested Tip Amount: ${suggestedTip}</h3>
           <p>This is approximately {((parseFloat(suggestedTip) / parseFloat(billAmount)) * 100).toFixed(1)}% of your bill.</p>
           
@@ -975,26 +1173,36 @@ const UserFormPage = () => {
        {suggestedTip && !showHistory && (
         <div className="split-bill-section">
           <div className="split-bill-header">
-            <h3>Split the Bill</h3>
+            <h3 id="split-bill-heading">Split the Bill</h3>
             <button 
               type="button"
               onClick={() => setShowSplitOptions(!showSplitOptions)}
               className="toggle-split-btn"
+              aria-expanded={showSplitOptions}
+              aria-controls="split-options-section"
             >
               {showSplitOptions ? "Hide Split Options" : "Show Split Options"}
             </button>
           </div>
           
           {showSplitOptions && (
-            <div className="split-options">
+            <div 
+              id="split-options-section" 
+              className="split-options"
+              tabIndex="-1"
+              ref={splitOptionsRef}
+              aria-labelledby="split-bill-heading"
+            >
               <div className="split-controls">
-                <div className="split-type-selector">
-                  <label>Split Type:</label>
+                <div className="split-type-selector" role="radiogroup" aria-label="Split type selection">
+                  <span id="split-type-label">Split Type:</span>
                   <div className="split-type-buttons">
                     <button
                       type="button"
                       className={`split-type-btn ${splitType === "equal" ? "active" : ""}`}
                       onClick={() => setSplitType("equal")}
+                      aria-pressed={splitType === "equal"}
+                      aria-labelledby="split-type-label"
                     >
                       Split Equally
                     </button>
@@ -1002,6 +1210,8 @@ const UserFormPage = () => {
                       type="button"
                       className={`split-type-btn ${splitType === "custom" ? "active" : ""}`}
                       onClick={() => setSplitType("custom")}
+                      aria-pressed={splitType === "custom"}
+                      aria-labelledby="split-type-label"
                     >
                       Custom Split
                     </button>
@@ -1009,13 +1219,21 @@ const UserFormPage = () => {
                 </div>
                 
                 <div className="split-count-control">
-                  <label>Number of People:</label>
-                  <div className="split-count-adjuster">
+                  <label id="split-count-label">Number of People:</label>
+                  <div 
+                    className="split-count-adjuster"
+                    role="spinbutton"
+                    aria-valuemin="2"
+                    aria-valuemax="10"
+                    aria-valuenow={splitCount}
+                    aria-labelledby="split-count-label"
+                  >
                     <button 
                       type="button" 
                       onClick={removeSplitPerson}
                       disabled={splitCount <= 2}
                       className="split-btn"
+                      aria-label="Decrease number of people"
                     >
                       -
                     </button>
@@ -1025,6 +1243,7 @@ const UserFormPage = () => {
                       onClick={addSplitPerson}
                       disabled={splitCount >= 10}
                       className="split-btn"
+                      aria-label="Increase number of people"
                     >
                       +
                     </button>
@@ -1034,73 +1253,88 @@ const UserFormPage = () => {
               
               {splitType === "equal" ? (
                 // Equal split UI
-                <div className="equal-split-result">
-                  <h4>Each Person Pays:</h4>
-                  <div className="split-result-grid">
-                    <div className="split-result-row header">
-                      <div>Item</div>
-                      <div>Per Person</div>
-                      <div>Total</div>
-                    </div>
-                    <div className="split-result-row">
-                      <div>Bill Amount</div>
-                      <div>${(parseFloat(billAmount) / splitCount).toFixed(2)}</div>
-                      <div>${parseFloat(billAmount).toFixed(2)}</div>
-                    </div>
-                    <div className="split-result-row">
-                      <div>Tip</div>
-                      <div>${(parseFloat(actualTipAmount || suggestedTip) / splitCount).toFixed(2)}</div>
-                      <div>${parseFloat(actualTipAmount || suggestedTip).toFixed(2)}</div>
-                    </div>
-                    <div className="split-result-row total">
-                      <div>Total</div>
-                      <div>${((parseFloat(billAmount) + parseFloat(actualTipAmount || suggestedTip)) / splitCount).toFixed(2)}</div>
-                      <div>${(parseFloat(billAmount) + parseFloat(actualTipAmount || suggestedTip)).toFixed(2)}</div>
-                    </div>
-                  </div>
+                <div className="equal-split-result" aria-labelledby="equal-split-heading">
+                  <h4 id="equal-split-heading">Each Person Pays:</h4>
+                  <table className="split-result-table" aria-label="Equal split calculations">
+                    <thead>
+                      <tr>
+                        <th scope="col">Item</th>
+                        <th scope="col">Per Person</th>
+                        <th scope="col">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th scope="row">Bill Amount</th>
+                        <td>${(parseFloat(billAmount) / splitCount).toFixed(2)}</td>
+                        <td>${parseFloat(billAmount).toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Tip</th>
+                        <td>${(parseFloat(actualTipAmount || suggestedTip) / splitCount).toFixed(2)}</td>
+                        <td>${parseFloat(actualTipAmount || suggestedTip).toFixed(2)}</td>
+                      </tr>
+                      <tr className="total-row">
+                        <th scope="row">Total</th>
+                        <td>${((parseFloat(billAmount) + parseFloat(actualTipAmount || suggestedTip)) / splitCount).toFixed(2)}</td>
+                        <td>${(parseFloat(billAmount) + parseFloat(actualTipAmount || suggestedTip)).toFixed(2)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               ) : (
                 // Custom split UI
-                <div className="custom-split-result">
-                  <h4>Custom Split:</h4>
+                <div className="custom-split-result" aria-labelledby="custom-split-heading">
+                  <h4 id="custom-split-heading">Custom Split:</h4>
                   <p className="custom-split-note">Adjust percentages below to customize how the bill is split</p>
                   
-                  <div className="custom-splits-container">
-                    <div className="custom-split-row header">
-                      <div>Person</div>
-                      <div>Percentage</div>
-                      <div>Bill Amount</div>
-                      <div>Tip</div>
-                      <div>Total</div>
-                    </div>
-                    
-                    {calculateCustomSplits().map(split => (
-                      <div className="custom-split-row" key={split.id}>
-                        <div>Person {split.id}</div>
-                        <div className="percentage-input">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={split.percentage}
-                            onChange={(e) => handleCustomSplitChange(split.id, parseFloat(e.target.value))}
-                          />
-                          <span>%</span>
-                        </div>
-                        <div>${split.amount}</div>
-                        <div>${split.tip}</div>
-                        <div>${split.total}</div>
-                      </div>
-                    ))}
-                    
-                    <div className="custom-split-row total">
-                      <div>Total</div>
-                      <div>{customSplits.reduce((sum, split) => sum + split.percentage, 0).toFixed(1)}%</div>
-                      <div>${parseFloat(billAmount).toFixed(2)}</div>
-                      <div>${parseFloat(actualTipAmount || suggestedTip).toFixed(2)}</div>
-                      <div>${(parseFloat(billAmount) + parseFloat(actualTipAmount || suggestedTip)).toFixed(2)}</div>
-                    </div>
-                  </div>
+                  <table className="custom-splits-table" aria-label="Custom split calculations">
+                    <thead>
+                      <tr>
+                        <th scope="col">Person</th>
+                        <th scope="col">Percentage</th>
+                        <th scope="col">Bill Amount</th>
+                        <th scope="col">Tip</th>
+                        <th scope="col">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {calculateCustomSplits().map(split => (
+                        <tr key={split.id}>
+                          <th scope="row">Person {split.id}</th>
+                          <td>
+                            <div className="percentage-input">
+                              <label htmlFor={`person-${split.id}-percentage`} className="sr-only">
+                                Person {split.id} percentage
+                              </label>
+                              <input
+                                id={`person-${split.id}-percentage`}
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={split.percentage}
+                                onChange={(e) => handleCustomSplitChange(split.id, parseFloat(e.target.value))}
+                                aria-label={`Person ${split.id} percentage`}
+                              />
+                              <span aria-hidden="true">%</span>
+                            </div>
+                          </td>
+                          <td>${split.amount}</td>
+                          <td>${split.tip}</td>
+                          <td>${split.total}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="total-row">
+                        <th scope="row">Total</th>
+                        <td>{customSplits.reduce((sum, split) => sum + split.percentage, 0).toFixed(1)}%</td>
+                        <td>${parseFloat(billAmount).toFixed(2)}</td>
+                        <td>${parseFloat(actualTipAmount || suggestedTip).toFixed(2)}</td>
+                        <td>${(parseFloat(billAmount) + parseFloat(actualTipAmount || suggestedTip)).toFixed(2)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               )}
             </div>
@@ -1110,13 +1344,22 @@ const UserFormPage = () => {
       
       {/* Split Details Modal */}
       {selectedSplitEntry && (
-        <div className="split-details-modal">
+        <div 
+          className="split-details-modal" 
+          role="dialog" 
+          aria-modal="true" 
+          aria-labelledby="modal-title"
+          ref={modalRef}
+          tabIndex="-1"
+          onKeyDown={handleModalTabKey}
+        >
           <div className="split-modal-content">
             <div className="split-modal-header">
-              <h3>Bill Split Details</h3>
+              <h3 id="modal-title">Bill Split Details</h3>
               <button 
                 className="close-modal-btn"
                 onClick={() => setSelectedSplitEntry(null)}
+                aria-label="Close modal"
               >
                 ✕
               </button>
@@ -1141,20 +1384,20 @@ const UserFormPage = () => {
                 </p>
               </div>
               
-              <table className="split-details-table">
+              <table className="split-details-table" aria-label="Split details for each person">
                 <thead>
                   <tr>
-                    <th>Person</th>
-                    <th>Percentage</th>
-                    <th>Bill Amount</th>
-                    <th>Tip Amount</th>
-                    <th>Total</th>
+                    <th scope="col">Person</th>
+                    <th scope="col">Percentage</th>
+                    <th scope="col">Bill Amount</th>
+                    <th scope="col">Tip Amount</th>
+                    <th scope="col">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {selectedSplitEntry.splitDetails.map(detail => (
                     <tr key={detail.personId}>
-                      <td>Person {detail.personId}</td>
+                      <th scope="row">Person {detail.personId}</th>
                       <td>{detail.percentage.toFixed(1)}%</td>
                       <td>${parseFloat(detail.amount).toFixed(2)}</td>
                       <td>${parseFloat(detail.tipAmount).toFixed(2)}</td>
@@ -1167,6 +1410,52 @@ const UserFormPage = () => {
           </div>
         </div>
       )}
+
+      {/* Add CSS styles for screen reader only content */}
+      <style jsx>{`
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border-width: 0;
+        }
+        
+        /* High contrast mode support */
+        @media (forced-colors: active) {
+          .mood-button.selected,
+          .genre-button.selected,
+          .split-type-btn.active {
+            outline: 3px solid SelectedItem;
+          }
+          
+          button:focus,
+          input:focus,
+          select:focus {
+            outline: 2px solid Highlight;
+          }
+        }
+        
+        /* Focus styles */
+        :focus {
+          outline: 2px solid #4a90e2;
+          outline-offset: 2px;
+        }
+        
+        /* Focus visible for keyboard users */
+        :focus:not(:focus-visible) {
+          outline: none;
+        }
+        
+        :focus-visible {
+          outline: 2px solid #4a90e2;
+          outline-offset: 2px;
+        }
+      `}</style>
     </div>
   );
 };
