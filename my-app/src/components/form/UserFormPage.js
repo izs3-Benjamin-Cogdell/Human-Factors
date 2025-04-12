@@ -563,23 +563,9 @@ const UserFormPage = () => {
     // Compare with suggested tip
     const tipDiff = parseFloat(actualTipAmount) - parseFloat(suggestedTip);
     let message = "";
-    
-    if (Math.abs(tipDiff) < 0.5) {
-      message = "You tipped very close to the suggested amount.";
-    } else if (tipDiff > 0) {
-      message = `You tipped $${tipDiff.toFixed(2)} more than suggested. Was there a specific reason?`;
-    } else {
-      message = `You tipped $${Math.abs(tipDiff).toFixed(2)} less than suggested. Was there a specific reason?`;
-    }
-    
+
     setComparisonMessage(message);
     setShowComparison(true);
-    
-    // Reset form after a short delay to show the comparison
-    setTimeout(() => {
-      resetForm();
-      setShowHistory(true);
-    }, 5000);
   };
   
   // Function to save tip to MongoDB database
@@ -983,38 +969,6 @@ const UserFormPage = () => {
             <p className="tip-comparison">
               Your average tip is {averageTip}% of the bill.
             </p>
-          )}
-          
-          {showComparison && (
-            <div className="comparison-feedback">
-              <p>{comparisonMessage}</p>
-              <div className="feedback-buttons">
-                <button 
-                  type="button" 
-                  onClick={() => setShowComparison(false)}
-                >
-                  Service Quality
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => setShowComparison(false)}
-                >
-                  Personal Preference
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => setShowComparison(false)}
-                >
-                  Calculator Error
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => setShowComparison(false)}
-                >
-                  Skip
-                </button>
-              </div>
-            </div>
           )}
         </div>
       )}
