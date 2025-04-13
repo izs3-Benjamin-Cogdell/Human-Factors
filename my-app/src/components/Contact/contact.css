@@ -36,7 +36,6 @@
   line-height: 1.5;
 }
 
-/* Form styling with accessibility improvements */
 .contact-form {
   margin-bottom: 30px;
 }
@@ -62,7 +61,6 @@
   font-family: inherit;
 }
 
-/* Enhanced focus states for form controls */
 .input-group input:focus,
 .input-group textarea:focus {
   outline: none;
