@@ -39,3 +39,167 @@
   text-align: center;
   margin-top: 40px;
 }
+/* About Page Styling */
+.about-container {
+  padding: 60px 20px;
+  background: linear-gradient(to bottom right, #f4faff, #ffffff);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+  line-height: 1.8;
+  min-height: 100vh;
+}
+
+/* Main heading with your gradient style */
+.about-container h1,
+.about-heading {
+  font-size: 3.0rem;
+  text-align: center;
+  margin-bottom: 40px;
+  background: linear-gradient(to bottom right, #44cbdd, #12d7fa);
+  padding: 30px;
+  border-radius: 12px;
+  color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Remove outline but keep accessible */
+.about-heading:focus {
+  outline: none;
+}
+
+/* Navigation buttons */
+.nav-buttons {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.home-button {
+  padding: 12px 24px;
+  background: linear-gradient(to bottom right, #44cbdd, #12d7fa);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: background-color 0.2s, transform 0.1s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.home-button:hover {
+  background: linear-gradient(to bottom right, #12d7fa, #44cbdd);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.home-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(18, 215, 250, 0.5), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.about-section {
+  max-width: 800px;
+  margin: 0 auto 60px auto;
+  padding: 0 20px;
+}
+
+.about-section h2 {
+  font-size: 1.8rem;
+  margin-bottom: 15px;
+  color: #007bff;
+}
+
+.about-section p {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+}
+
+/* Contact info section */
+.contact-info {
+  font-size: 1.1rem;
+  text-align: center;
+  margin-top: 40px;
+  background-color: rgba(244, 250, 255, 0.6);
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #44cbdd;
+}
+
+.contact-info a {
+  color: #007bff;
+  text-decoration: none;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.contact-info a:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
+.contact-info a:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  border-radius: 2px;
+}
+
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: linear-gradient(to right, #44cbdd, #12d7fa);
+  color: white;
+  padding: 10px 15px;
+  z-index: 100;
+  transition: top 0.3s;
+  border-radius: 0 0 5px 0;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Screen reader only class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .about-container h1,
+  .about-heading {
+    font-size: 2.2rem;
+    padding: 20px;
+  }
+  
+  .about-section h2 {
+    font-size: 1.6rem;
+  }
+  
+  .about-section p {
+    font-size: 1rem;
+  }
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+  .home-button {
+    border: 2px solid currentColor;
+  }
+  
+  .contact-info {
+    border: 1px solid currentColor;
+  }
+}
