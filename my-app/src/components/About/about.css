@@ -11,10 +11,10 @@
   text-align: center;
   margin-bottom: 40px;
   background: linear-gradient(to bottom right, #44cbdd, #12d7fa);
-  padding: 30px; /* ⬅️ this makes the rectangle bigger */
-  border-radius: 12px; /* ⬅️ optional: makes the corners round */
-  color: #fff; /* ⬅️ optional: improves text visibility */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* ⬅️ subtle shadow for depth */
+  padding: 30px; 
+  border-radius: 12px;
+  color: #fff; 
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
 }
 
 .about-section {
